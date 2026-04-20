@@ -1,3 +1,10 @@
+/* =========================
+   GLOBAL
+========================= */
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
@@ -6,7 +13,9 @@ body {
     padding-top: 153px;
 }
 
-/* TOPBAR */
+/* =========================
+   TOPBAR
+========================= */
 .topbar {
     position: fixed;
     top: 0;
@@ -20,7 +29,9 @@ body {
     font-size: 14px;
 }
 
-/* HEADER */
+/* =========================
+   HEADER
+========================= */
 header {
     position: fixed;
     top: 40px;
@@ -29,7 +40,6 @@ header {
 
     display: flex;
     align-items: center;
-
     padding: 0 40px;
     height: 110px;
 
@@ -41,7 +51,6 @@ header {
 /* LOGOS */
 .logo {
     height: 150px;
-    width: auto;
     object-fit: contain;
 }
 
@@ -72,8 +81,8 @@ nav a {
 nav a::after {
     content: "";
     position: absolute;
-    left: 0;
     bottom: -5px;
+    left: 0;
     width: 0%;
     height: 1px;
     background: #9d8123;
@@ -84,7 +93,9 @@ nav a:hover::after {
     width: 100%;
 }
 
-/* HERO */
+/* =========================
+   HERO
+========================= */
 .hero {
     height: 100vh;
     background: url('../images/hero.png') center/cover no-repeat;
@@ -104,7 +115,7 @@ nav a:hover::after {
     );
 }
 
-/* CONTENU HERO */
+/* HERO CONTENT */
 .overlay {
     position: relative;
     z-index: 2;
@@ -131,15 +142,15 @@ nav a:hover::after {
     margin-top: 10px;
 }
 
-/* BOUTON HERO */
+/* HERO BUTTON */
 .btn-hero {
     display: inline-block;
     margin-top: 30px;
     padding: 14px 35px;
-    text-decoration: none;
-    transition: all 0.3s ease;
     border: 1px solid #D4AF37;
     color: #D4AF37;
+    text-decoration: none;
+    transition: all 0.3s ease;
 }
 
 .btn-hero:hover {
@@ -147,11 +158,12 @@ nav a:hover::after {
     color: #0c1d34;
 }
 
-/* INTRO LUXE */
+/* =========================
+   INTRO LUXE
+========================= */
 .intro-luxe {
     text-align: center;
     padding: 100px 20px;
-    background: #0c1d34;
 }
 
 .intro-luxe h2 {
@@ -162,6 +174,7 @@ nav a:hover::after {
     margin-bottom: 15px;
 }
 
+/* SEPARATOR */
 .separator-luxe {
     position: relative;
     width: 120px;
@@ -170,7 +183,6 @@ nav a:hover::after {
     margin: 25px auto;
 }
 
-/* DIAMANT CENTRAL */
 .separator-luxe::before {
     content: "";
     position: absolute;
@@ -183,7 +195,6 @@ nav a:hover::after {
     box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
 }
 
-/* PETITES ORNEMENTS */
 .separator-luxe::after {
     content: "✦";
     position: absolute;
@@ -203,48 +214,111 @@ nav a:hover::after {
     margin: auto;
 }
 
-/* CATEGORIES */
+/* =========================
+   CATEGORIES
+========================= */
+#categories {
+    scroll-margin-top: 140px;
+}
+
 .categories {
-    
     display: flex;
     justify-content: center;
     gap: 20px;
     padding: 50px;
 }
-#categories {
-    scroll-margin-top: 140px; /* ajuste selon ton header */
-}
+
+/* CARD */
 .card {
     position: relative;
+    overflow: hidden;
 }
 
+/* IMAGE */
 .card img {
     width: 300px;
     height: 400px;
     object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
 }
 
-.card h3 {
+/* OVERLAY */
+.card::before {
+    content: "";
     position: absolute;
-    bottom: 20px;
-    left: 20px;
-    font-family: 'Playfair Display';
+    inset: 0;
+    background: rgba(5, 10, 20, 0.35);
+    transition: 0.3s;
 }
 
-/* FEATURES */
+/* CONTENT */
+.card-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    z-index: 2;
+    text-align: center;
+}
+
+/* TITLE */
+.card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+/* BUTTON */
+.btn-card {
+    padding: 10px 25px;
+    border: 1px solid #D4AF37;
+    background: #0c1d34;
+    color: #D4AF37;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+/* HOVER */
+.card:hover img {
+    transform: scale(1.05);
+}
+
+.card:hover::before {
+    background: rgba(5, 10, 20, 0.55);
+}
+
+.card:hover .btn-card {
+    background: #D4AF37;
+    color: #0c1d34;
+}
+
+/* =========================
+   FEATURES
+========================= */
 .features {
     display: flex;
     justify-content: space-around;
     padding: 50px;
 }
 
-/* FOOTER */
+/* =========================
+   FOOTER
+========================= */
 footer {
     text-align: center;
     padding: 30px;
 }
 
-/* FLOAT BUTTONS */
+/* =========================
+   FLOATING BUTTONS
+========================= */
 .floating-buttons {
     position: fixed;
     bottom: 25px;
@@ -270,7 +344,6 @@ footer {
 
 .call-button {
     background: linear-gradient(135deg, #D4AF37, #b8962e);
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
 }
 
 .whatsapp-button {
@@ -282,81 +355,112 @@ footer {
     transform: translateY(-5px) scale(1.05);
     box-shadow: 0 10px 25px rgba(0,0,0,0.6);
 }
-html {
-    scroll-behavior: smooth;
-}
 
-/* CARD */
-.card {
-    position: relative;
-    overflow: hidden;
-}
 
-/* IMAGE */
-.card img {
-    width: 300px;
-    height: 400px;
-    object-fit: cover;
-    display: block;
-}
+/* =========================
+   RESPONSIVE MOBILE
+========================= */
+@media (max-width: 768px) {
 
-/* OVERLAY SOMBRE */
-.card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(5, 10, 20, 0.35);
-    transition: 0.3s;
-}
+    /* HEADER */
+    header {
+        padding: 0 20px;
+        height: 80px;
+    }
 
-/* CONTENU CENTRÉ */
-.card-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    z-index: 2;
-    text-align: center;
-}
+    .logo {
+        height: 80px;
+    }
 
-/* TITRE */
-.card h3 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 28px;
-    letter-spacing: 2px;
-    color: white;
-    margin: 0;
-}
+    nav {
+        gap: 20px;
+        font-size: 13px;
+    }
 
-/* BOUTON */
-.btn-card {
-    padding: 10px 25px;
-    text-decoration: none;
-    border: 1px solid #D4AF37;
-    background: #0c1d34; /* BLEU PROFOND */
-    color: #D4AF37;
-    font-size: 13px;
-    letter-spacing: 1px;
-    transition: all 0.3s ease;
-}
+    nav a {
+        font-size: 13px;
+    }
 
-/* HOVER */
-.card:hover::before {
-    background: rgba(5, 10, 20, 0.55);
-}
+    /* HERO */
+    .hero {
+        height: 90vh;
+    }
 
-.card:hover .btn-card {
-    background: #D4AF37;
-    color: #0c1d34;
-}
+    .overlay {
+        transform: translateY(-20px);
+        padding: 0 15px;
+    }
 
-.card img {
-    transition: transform 0.5s ease;
-}
+    .hero-logo {
+        width: 180px;
+        margin-bottom: 10px;
+    }
 
-.card:hover img {
-    transform: scale(1.05);
+    .hero h1 {
+        font-size: 36px;
+        letter-spacing: 1px;
+    }
+
+    .hero p {
+        font-size: 14px;
+    }
+
+    .btn-hero {
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+
+    /* INTRO */
+    .intro-luxe {
+        padding: 60px 20px;
+    }
+
+    .intro-luxe h2 {
+        font-size: 22px;
+    }
+
+    .intro-luxe p {
+        font-size: 14px;
+    }
+
+    /* CATEGORIES */
+    .categories {
+        flex-direction: column;
+        align-items: center;
+        padding: 30px 15px;
+    }
+
+    .card img {
+        width: 100%;
+        max-width: 320px;
+        height: 380px;
+    }
+
+    .card h3 {
+        font-size: 22px;
+    }
+
+    .btn-card {
+        font-size: 12px;
+        padding: 8px 18px;
+    }
+
+    /* FEATURES */
+    .features {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+
+    /* FLOAT BUTTONS */
+    .floating-buttons {
+        bottom: 15px;
+        right: 15px;
+    }
+
+    .call-button,
+    .whatsapp-button {
+        width: 50px;
+        height: 50px;
+    }
 }
