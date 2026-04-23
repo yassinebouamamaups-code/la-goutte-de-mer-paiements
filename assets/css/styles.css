@@ -1531,8 +1531,12 @@ a {
         display: none;
     }
 
+    .floating-contact--call {
+        right: max(32px, env(safe-area-inset-right));
+    }
+
     .cart-floating-button {
-        right: 18px;
+        right: max(32px, env(safe-area-inset-right));
         bottom: 87px;
     }
 
