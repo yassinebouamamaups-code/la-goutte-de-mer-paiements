@@ -12,12 +12,12 @@
         : sourceUrl;
 
     const fallbackCsv = `id,categorie,nom,prix,promo,selection_moment,description,photos,statut
-hom-001,hommes,Veste en laine vintage,"89,00 €","69,00 €",oui,"Veste seconde main sélectionnée pour sa coupe et son tombé intemporel.","assets/images/hommes.jpg|assets/images/hero.png",disponible
+hom-001,hommes,Veste en laine vintage,"89,00 €","69,00 €",oui,"Veste seconde main sélectionnée pour sa coupe et son tombé intemporel.","assets/images/hommes.jpg|assets/images/hero-sans-marque.png",disponible
 hom-002,hommes,Manteau classique,"119,00 €",,oui,"Manteau homme à l'allure sobre, idéal pour une silhouette élégante.","assets/images/hommes.jpg",disponible
-fem-001,femmes,Sac en cuir vintage,"129,00 €",,oui,"Sac en cuir au caractère affirmé, choisi pour sa patine et sa tenue.","assets/images/femmes.png|assets/images/accessoires.png",disponible
-fem-002,femmes,Blazer intemporel,"79,00 €","59,00 €",oui,"Blazer femme facile à porter, sélectionné pour sa ligne et son élégance.","assets/images/femmes.png|assets/images/hero.png",disponible
-acc-001,accessoires,Chaîne plaqué or vintage,"45,00 €",,oui,"Chaîne dorée vintage, discrète et lumineuse.","assets/images/logo_fripperie2.png|assets/images/accessoires.png",disponible
-acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pour signer une silhouette avec subtilité.","assets/images/accessoires.png",disponible`;
+fem-001,femmes,Sac en cuir vintage,"129,00 €",,oui,"Sac en cuir au caractère affirmé, choisi pour sa patine et sa tenue.","assets/images/femmes-sans-marque.png|assets/images/accessoires-sans-marque.png",disponible
+fem-002,femmes,Blazer intemporel,"79,00 €","59,00 €",oui,"Blazer femme facile à porter, sélectionné pour sa ligne et son élégance.","assets/images/femmes-sans-marque.png|assets/images/hero-sans-marque.png",disponible
+acc-001,accessoires,Chaîne plaqué or vintage,"45,00 €",,oui,"Chaîne dorée vintage, discrète et lumineuse.","assets/images/logo_fripperie2.png|assets/images/accessoires-sans-marque.png",disponible
+acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pour signer une silhouette avec subtilité.","assets/images/accessoires-sans-marque.png",disponible`;
 
     function parseCsv(text) {
         const rows = [];
@@ -158,7 +158,7 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
         return `
             <article class="catalog-card">
                 <div class="catalog-card__media">
-                    <img class="catalog-card__image" src="${mainPhoto}" alt="${product.nom}">
+                    <img class="catalog-card__image" src="${mainPhoto}" alt="">
                 </div>
                 ${photos.length > 1 ? `<div class="catalog-card__thumbs">${thumbnails}</div>` : ""}
                 <div class="catalog-card__content">
@@ -187,8 +187,8 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
 
         return `
             <article class="mini-product">
-                <a href="${product.categorie}.html" aria-label="Voir ${product.nom}">
-                    <img src="${mainPhoto}" alt="${product.nom}">
+                <a href="${product.categorie}.html" aria-label="Voir l'article">
+                    <img src="${mainPhoto}" alt="">
                     <h3>${product.nom}</h3>
                     ${priceMarkup(product, "mini-product__price")}
                 </a>
@@ -373,7 +373,7 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
                     ${item.image ? `<img src="${escapeAttribute(item.image)}" alt="">` : `<div class="cart-item__placeholder"></div>`}
                     <div>
                         <h3>${escapeHtml(item.name)}</h3>
-                        <p>${escapeHtml(item.id)}${item.category ? ` - ${escapeHtml(item.category)}` : ""}</p>
+                        ${item.category ? `<p>${escapeHtml(item.category)}</p>` : ""}
                         <strong>${escapeHtml(displayPrice(item.price))}</strong>
                     </div>
                     <button type="button" data-remove-cart-item="${escapeAttribute(item.id)}" aria-label="Retirer ${escapeAttribute(item.name)}">&times;</button>
@@ -393,7 +393,7 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
         ];
 
         items.forEach((item) => {
-            lines.push(`- ${item.id} - ${item.name} - ${displayPrice(item.price)}`);
+            lines.push(`- ${item.name} - ${displayPrice(item.price)}`);
         });
 
         lines.push("");

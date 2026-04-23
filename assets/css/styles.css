@@ -186,7 +186,7 @@ a {
     border-bottom: 1px solid var(--line);
     background:
         linear-gradient(90deg, rgba(2, 10, 18, 0.88) 0%, rgba(2, 10, 18, 0.48) 47%, rgba(2, 10, 18, 0.08) 100%),
-        url("../images/hero.png") center 45% / cover no-repeat;
+        url("../images/hero-sans-marque.png") center 45% / cover no-repeat;
 }
 
 .hero::after {
@@ -993,12 +993,12 @@ a {
 }
 
 .collection-hero--femmes {
-    background-image: url("../images/femmes.png");
+    background-image: url("../images/femmes-sans-marque.png");
     background-position: center 40%;
 }
 
 .collection-hero--accessoires {
-    background-image: url("../images/accessoires.png");
+    background-image: url("../images/accessoires-sans-marque.png");
     background-position: center 58%;
 }
 
