@@ -3,6 +3,8 @@
     const selectionGrid = document.querySelector("[data-selection-grid]");
     if (!productGrid && !selectionGrid) return;
 
+    const CART_STORAGE_KEY = "laGoutteDeMerCart";
+    const WHATSAPP_PHONE = "33766884222";
     const status = document.querySelector("[data-products-status]");
     const sourceUrl = window.PRODUCTS_SOURCE_URL ||"https://docs.google.com/spreadsheets/d/1tqC0MURptEfWWk4wJQWo8xMI-ToCadDEtjMugoOwTDQ/export?format=csv&gid=376933709";
     const cacheSafeSourceUrl = sourceUrl.includes("docs.google.com")
@@ -68,7 +70,64 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
     }
 
     function photosOf(product) {
-        return (product.photos || "").split("|").map((photo) => photo.trim()).filter(Boolean);
+        return (product.photos || "")
+            .split(/[|;]/)
+            .map((photo) => photo.trim())
+            .filter(Boolean);
+    }
+
+    function productPrice(product) {
+        return product.promo || product.prix || "";
+    }
+
+    function clean(value) {
+        return String(value || "").trim();
+    }
+
+    function escapeHtml(value) {
+        const div = document.createElement("div");
+        div.textContent = clean(value);
+        return div.innerHTML;
+    }
+
+    function escapeAttribute(value) {
+        return escapeHtml(value).replace(/"/g, "&quot;");
+    }
+
+    function parsePrice(value) {
+        const normalized = clean(value)
+            .replace(/\s/g, "")
+            .replace("EUR", "")
+            .replace(/\u20ac/g, "")
+            .replace(/\u00e2\u201a\u00ac/g, "")
+            .replace(",", ".");
+        const number = Number.parseFloat(normalized);
+        return Number.isFinite(number) ? number : 0;
+    }
+
+    function formatPrice(value) {
+        return value.toLocaleString("fr-FR", {
+            style: "currency",
+            currency: "EUR"
+        });
+    }
+
+    function displayPrice(value) {
+        const parsed = parsePrice(value);
+        return parsed > 0 ? formatPrice(parsed) : clean(value);
+    }
+
+    function loadCart() {
+        try {
+            const saved = localStorage.getItem(CART_STORAGE_KEY);
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function saveCart(items) {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
     }
 
     function priceMarkup(product, className) {
@@ -90,7 +149,7 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
     function catalogCard(product) {
         const photos = photosOf(product);
         const mainPhoto = photos[0] || "assets/images/logo_fripperie2.png";
-        const thumbnails = photos.slice(0, 4).map((photo, index) => `
+        const thumbnails = photos.map((photo, index) => `
             <button class="catalog-card__thumb${index === 0 ? " is-active" : ""}" type="button" data-photo="${photo}" aria-label="Voir la photo ${index + 1}">
                 <img src="${photo}" alt="">
             </button>
@@ -107,7 +166,16 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
                     <h2>${product.nom}</h2>
                     <p>${product.description}</p>
                     ${priceMarkup(product, "catalog-card__price")}
-                    <a class="button button--small" href="https://wa.me/33766884222?text=Bonjour,%20je%20souhaite%20des%20informations%20sur%20${encodeURIComponent(product.nom)}." target="_blank" rel="noopener">Demander</a>
+                    <button
+                        class="button button--small catalog-card__cart"
+                        type="button"
+                        data-add-to-cart
+                        data-id="${escapeAttribute(product.id)}"
+                        data-name="${escapeAttribute(product.nom)}"
+                        data-price="${escapeAttribute(productPrice(product))}"
+                        data-category="${escapeAttribute(product.categorie)}"
+                        data-image="${escapeAttribute(mainPhoto)}"
+                    >Ajouter au panier</button>
                 </div>
             </article>
         `;
@@ -124,6 +192,16 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
                     <h3>${product.nom}</h3>
                     ${priceMarkup(product, "mini-product__price")}
                 </a>
+                <button
+                    class="button button--small mini-product__cart"
+                    type="button"
+                    data-add-to-cart
+                    data-id="${escapeAttribute(product.id)}"
+                    data-name="${escapeAttribute(product.nom)}"
+                    data-price="${escapeAttribute(productPrice(product))}"
+                    data-category="${escapeAttribute(product.categorie)}"
+                    data-image="${escapeAttribute(mainPhoto)}"
+                >Ajouter au panier</button>
             </article>
         `;
     }
@@ -177,6 +255,161 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
             thumb.classList.add("is-active");
         });
     }
+
+    function setupCart() {
+        const headerCart = document.querySelector(".header-actions a[aria-label='Panier']");
+        const cartButton = document.createElement("button");
+        const backdrop = document.createElement("div");
+        const panel = document.createElement("aside");
+
+        cartButton.className = "cart-floating-button";
+        cartButton.type = "button";
+        cartButton.setAttribute("aria-label", "Ouvrir le panier");
+        cartButton.innerHTML = `
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l1 13H5L6 8Zm3 0V6a3 3 0 0 1 6 0v2"/></svg>
+            <span data-cart-count>0</span>
+        `;
+
+        backdrop.className = "cart-backdrop";
+
+        panel.className = "cart-panel";
+        panel.setAttribute("aria-label", "Panier");
+        panel.innerHTML = `
+            <div class="cart-panel__head">
+                <h2>Panier</h2>
+                <button type="button" data-cart-close aria-label="Fermer le panier">&times;</button>
+            </div>
+            <div class="cart-panel__items" data-cart-items></div>
+            <div class="cart-panel__footer">
+                <div class="cart-panel__total">
+                    <span>Total</span>
+                    <strong data-cart-total>0,00 EUR</strong>
+                </div>
+                <div class="cart-panel__actions">
+                    <button type="button" data-cart-clear>Vider</button>
+                    <a href="#" target="_blank" rel="noopener" data-cart-order>Commander</a>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(cartButton);
+        document.body.appendChild(backdrop);
+        document.body.appendChild(panel);
+
+        if (headerCart) {
+            headerCart.classList.add("header-cart-link");
+            headerCart.insertAdjacentHTML("beforeend", `<span class="header-cart-count" data-cart-count>0</span>`);
+            headerCart.addEventListener("click", (event) => {
+                event.preventDefault();
+                openCart();
+            });
+        }
+
+        cartButton.addEventListener("click", openCart);
+        backdrop.addEventListener("click", closeCart);
+        panel.querySelector("[data-cart-close]").addEventListener("click", closeCart);
+        panel.querySelector("[data-cart-clear]").addEventListener("click", () => {
+            saveCart([]);
+            renderCart();
+        });
+        panel.querySelector("[data-cart-items]").addEventListener("click", (event) => {
+            const removeButton = event.target.closest("[data-remove-cart-item]");
+            if (!removeButton) return;
+            const items = loadCart().filter((item) => item.id !== removeButton.dataset.removeCartItem);
+            saveCart(items);
+            renderCart();
+        });
+        document.addEventListener("click", (event) => {
+            const addButton = event.target.closest("[data-add-to-cart]");
+            if (!addButton) return;
+            addToCart({
+                id: addButton.dataset.id,
+                name: addButton.dataset.name,
+                price: addButton.dataset.price,
+                category: addButton.dataset.category,
+                image: addButton.dataset.image
+            });
+            addButton.textContent = "Dans le panier";
+            window.setTimeout(() => {
+                addButton.textContent = "Ajouter au panier";
+            }, 1200);
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") closeCart();
+        });
+
+        renderCart();
+    }
+
+    function addToCart(product) {
+        const items = loadCart();
+        if (!items.some((item) => item.id === product.id)) {
+            items.push(product);
+            saveCart(items);
+        }
+        renderCart();
+        openCart();
+    }
+
+    function renderCart() {
+        const items = loadCart();
+        const count = items.length;
+        const total = items.reduce((sum, item) => sum + parsePrice(item.price), 0);
+        const cartItems = document.querySelector("[data-cart-items]");
+        const orderLink = document.querySelector("[data-cart-order]");
+        const clearButton = document.querySelector("[data-cart-clear]");
+
+        document.querySelectorAll("[data-cart-count]").forEach((counter) => {
+            counter.textContent = count;
+            counter.hidden = count === 0;
+        });
+        document.querySelector("[data-cart-total]").textContent = formatPrice(total);
+
+        if (!items.length) {
+            cartItems.innerHTML = `<p class="cart-empty">Votre panier est vide.</p>`;
+        } else {
+            cartItems.innerHTML = items.map((item) => `
+                <article class="cart-item">
+                    ${item.image ? `<img src="${escapeAttribute(item.image)}" alt="">` : `<div class="cart-item__placeholder"></div>`}
+                    <div>
+                        <h3>${escapeHtml(item.name)}</h3>
+                        <p>${escapeHtml(item.id)}${item.category ? ` - ${escapeHtml(item.category)}` : ""}</p>
+                        <strong>${escapeHtml(displayPrice(item.price))}</strong>
+                    </div>
+                    <button type="button" data-remove-cart-item="${escapeAttribute(item.id)}" aria-label="Retirer ${escapeAttribute(item.name)}">&times;</button>
+                </article>
+            `).join("");
+        }
+
+        clearButton.disabled = count === 0;
+        orderLink.href = count ? buildWhatsappOrder(items, total) : "#";
+        orderLink.setAttribute("aria-disabled", String(count === 0));
+    }
+
+    function buildWhatsappOrder(items, total) {
+        const lines = [
+            "Bonjour, je souhaite commander :",
+            ""
+        ];
+
+        items.forEach((item) => {
+            lines.push(`- ${item.id} - ${item.name} - ${displayPrice(item.price)}`);
+        });
+
+        lines.push("");
+        lines.push(`Total : ${formatPrice(total)}`);
+        return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(lines.join("\n"))}`;
+    }
+
+    function openCart() {
+        document.body.classList.add("cart-is-open");
+    }
+
+    function closeCart() {
+        document.body.classList.remove("cart-is-open");
+    }
+
+    setupCart();
 
     fetch(cacheSafeSourceUrl)
         .then((response) => {
