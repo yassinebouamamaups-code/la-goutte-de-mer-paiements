@@ -19,6 +19,11 @@ fem-002,femmes,Blazer intemporel,"79,00 €","59,00 €",oui,"Blazer femme facil
 acc-001,accessoires,Chaîne plaqué or vintage,"45,00 €",,oui,"Chaîne dorée vintage, discrète et lumineuse.","assets/images/logo_fripperie2.png|assets/images/accessoires-sans-marque.png",disponible
 acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pour signer une silhouette avec subtilité.","assets/images/accessoires-sans-marque.png",disponible`;
 
+    const DEFAULT_IMAGE_FALLBACK = "assets/images/logo_fripperie2.png";
+    const PRODUCT_IMAGE_FALLBACKS = {
+        "hom-003": ["assets/images/smart-chino.jpg"]
+    };
+
     function parseCsv(text) {
         const rows = [];
         let row = [];
@@ -69,11 +74,43 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
         return ["oui", "yes", "true", "1", "x", "selection", "sélection"].includes((value || "").trim().toLowerCase());
     }
 
+    function driveImageUrl(fileId) {
+        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1600`;
+    }
+
+    function extractDriveId(url) {
+        const value = clean(url);
+        if (!value) return "";
+
+        const byQuery = value.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (byQuery) return byQuery[1];
+
+        const byPath = value.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (byPath) return byPath[1];
+
+        return "";
+    }
+
+    function normalizePhotoUrl(photo) {
+        const value = clean(photo);
+        if (!value) return "";
+
+        if (value.includes("drive.google.com") || value.includes("googleusercontent.com")) {
+            const fileId = extractDriveId(value);
+            return fileId ? driveImageUrl(fileId) : value;
+        }
+
+        return value;
+    }
+
     function photosOf(product) {
-        return (product.photos || "")
+        const remotePhotos = (product.photos || "")
             .split(/[|;]/)
-            .map((photo) => photo.trim())
+            .map((photo) => normalizePhotoUrl(photo))
             .filter(Boolean);
+
+        const localFallbacks = PRODUCT_IMAGE_FALLBACKS[product.id] || [];
+        return [...remotePhotos, ...localFallbacks].filter((photo, index, list) => list.indexOf(photo) === index);
     }
 
     function productPrice(product) {
@@ -148,17 +185,18 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
 
     function catalogCard(product) {
         const photos = photosOf(product);
-        const mainPhoto = photos[0] || "assets/images/logo_fripperie2.png";
+        const mainPhoto = photos[0] || DEFAULT_IMAGE_FALLBACK;
+        const fallbackPhoto = photos[1] || DEFAULT_IMAGE_FALLBACK;
         const thumbnails = photos.map((photo, index) => `
             <button class="catalog-card__thumb${index === 0 ? " is-active" : ""}" type="button" data-photo="${photo}" aria-label="Voir la photo ${index + 1}">
-                <img src="${photo}" alt="">
+                <img src="${photo}" alt="" data-fallback-photo="${escapeAttribute(index === 0 ? fallbackPhoto : DEFAULT_IMAGE_FALLBACK)}">
             </button>
         `).join("");
 
         return `
             <article class="catalog-card">
                 <div class="catalog-card__media">
-                    <img class="catalog-card__image" src="${mainPhoto}" alt="">
+                    <img class="catalog-card__image" src="${mainPhoto}" alt="" data-fallback-photo="${escapeAttribute(fallbackPhoto)}">
                 </div>
                 ${photos.length > 1 ? `<div class="catalog-card__thumbs">${thumbnails}</div>` : ""}
                 <div class="catalog-card__content">
@@ -183,12 +221,13 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
 
     function miniCard(product) {
         const photos = photosOf(product);
-        const mainPhoto = photos[0] || "assets/images/logo_fripperie2.png";
+        const mainPhoto = photos[0] || DEFAULT_IMAGE_FALLBACK;
+        const fallbackPhoto = photos[1] || DEFAULT_IMAGE_FALLBACK;
 
         return `
             <article class="mini-product">
                 <a href="${product.categorie}.html" aria-label="Voir l'article">
-                    <img src="${mainPhoto}" alt="">
+                    <img src="${mainPhoto}" alt="" data-fallback-photo="${escapeAttribute(fallbackPhoto)}">
                     <h3>${product.nom}</h3>
                     ${priceMarkup(product, "mini-product__price")}
                 </a>
@@ -254,6 +293,19 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
             card.querySelectorAll(".catalog-card__thumb").forEach((button) => button.classList.remove("is-active"));
             thumb.classList.add("is-active");
         });
+    }
+
+    function enableImageFallbacks() {
+        document.addEventListener("error", (event) => {
+            const image = event.target;
+            if (!(image instanceof HTMLImageElement)) return;
+
+            const fallbackPhoto = image.dataset.fallbackPhoto;
+            if (!fallbackPhoto || image.dataset.fallbackApplied === "true") return;
+
+            image.dataset.fallbackApplied = "true";
+            image.src = fallbackPhoto;
+        }, true);
     }
 
     function setupCart() {
@@ -410,6 +462,7 @@ acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pou
     }
 
     setupCart();
+    enableImageFallbacks();
 
     fetch(cacheSafeSourceUrl)
         .then((response) => {

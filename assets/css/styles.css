@@ -1495,12 +1495,19 @@ a {
 @media (max-width: 720px) {
     .topbar {
         grid-template-columns: 1fr;
-        height: 32px;
-        overflow: hidden;
+        min-height: 38px;
+        height: auto;
+        padding-top: 4px;
+        padding-bottom: 5px;
+        overflow: visible;
     }
 
     .topbar__item:nth-child(n+2) {
         display: none;
+    }
+
+    .topbar__item {
+        line-height: 1.25;
     }
 
     .site-header {
