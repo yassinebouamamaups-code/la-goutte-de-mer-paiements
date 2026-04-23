@@ -1210,8 +1210,8 @@ a {
 
 .cart-floating-button {
     position: fixed;
-    right: 97px;
-    bottom: 22px;
+    right: 32px;
+    bottom: 87px;
     z-index: 92;
     display: flex;
     align-items: center;
@@ -1532,8 +1532,8 @@ a {
     }
 
     .cart-floating-button {
-        right: 86px;
-        bottom: 22px;
+        right: 18px;
+        bottom: 87px;
     }
 
     .hero {
