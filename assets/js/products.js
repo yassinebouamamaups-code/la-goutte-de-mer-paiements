@@ -50,13 +50,15 @@
             throw new Error("Format CSV invalide");
         }
 
-        return rows.map((cells) => {
-            const item = {};
-            headers.forEach((header, index) => {
-                item[header] = (cells[index] || "").trim();
-            });
-            return item;
-        });
+        return rows
+            .map((cells) => {
+                const item = {};
+                headers.forEach((header, index) => {
+                    item[header] = (cells[index] || "").trim();
+                });
+                return item;
+            })
+            .filter((item) => item.id || item.categorie || item.nom || item.prix || item.promo || item.description || item.photos || item.statut);
     }
 
     function isSelected(value) {
