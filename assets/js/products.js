@@ -20,9 +20,8 @@ acc-001,accessoires,Chaîne plaqué or vintage,"45,00 €",,oui,"Chaîne dorée 
 acc-002,accessoires,Lunettes de caractère,"59,00 €",,oui,"Accessoire fort pour signer une silhouette avec subtilité.","assets/images/accessoires-sans-marque.png",disponible`;
 
     const DEFAULT_IMAGE_FALLBACK = "assets/images/logo_fripperie2.png";
-    const PRODUCT_IMAGE_FALLBACKS = {
-        "hom-003": ["assets/images/smart-chino.jpg"]
-    };
+    // const PRODUCT_IMAGE_FALLBACKS = {
+    //     "hom-003": ["assets/images/smart-chino.jpg"]};
 
     function parseCsv(text) {
         const rows = [];
