@@ -6,7 +6,7 @@
     const CART_STORAGE_KEY = "laGoutteDeMerCart";
     const WHATSAPP_PHONE = "33766884222";
     const status = document.querySelector("[data-products-status]");
-    const sourceUrl = window.PRODUCTS_SOURCE_URL ||"https://docs.google.com/spreadsheets/d/1tqC0MURptEfWWk4wJQWo8xMI-ToCadDEtjMugoOwTDQ/export?format=csv&gid=376933709";
+    const sourceUrl = window.PRODUCTS_SOURCE_URL ||"https://docs.google.com/spreadsheets/d/1yZVWg-Ypzd2VtFE4tVf0XmVVvTqzgFu8TTq4KAyvsb0/export?format=csv&gid=1348794459";
     const cacheSafeSourceUrl = sourceUrl.includes("docs.google.com")
         ? `${sourceUrl}${sourceUrl.includes("?") ? "&" : "?"}_=${Date.now()}`
         : sourceUrl;
