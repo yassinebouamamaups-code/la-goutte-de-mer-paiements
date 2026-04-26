@@ -801,7 +801,12 @@
             body: JSON.stringify({
                 cart: items.map((item) => ({
                     id: item.id,
-                    quantity: 1
+                    quantity: 1,
+                    name: item.name,
+                    category: item.category,
+                    image: item.image,
+                    price: item.price,
+                    unitAmount: parsePrice(item.price)
                 })),
                 customer
             })

@@ -126,8 +126,22 @@ function normalizeCart(value) {
   const items = Array.isArray(value) ? value : [];
   return items.map((item) => ({
     id: String(item?.id || "").trim(),
-    quantity: Number.parseInt(String(item?.quantity || 1), 10)
+    quantity: Number.parseInt(String(item?.quantity || 1), 10),
+    name: clean(item?.name),
+    category: clean(item?.category),
+    image: clean(item?.image),
+    unitAmount: parseClientAmount(item?.unitAmount ?? item?.price)
   })).filter((item) => item.id);
+}
+
+function parseClientAmount(value) {
+  const normalized = clean(value)
+    .replace(/\s/g, "")
+    .replace("EUR", "")
+    .replace(/\u20ac/g, "")
+    .replace(",", ".");
+  const amount = Number.parseFloat(normalized);
+  return Number.isFinite(amount) ? amount : 0;
 }
 
 function normalizeCustomer(customer) {

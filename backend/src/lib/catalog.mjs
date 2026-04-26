@@ -24,13 +24,21 @@ export function findCatalogItems(catalog, cartItems) {
   return cartItems.map((cartItem) => {
     const found = catalog.find((product) => product.id === String(cartItem.id));
     if (!found) {
+      if (config.paypal.environment === "sandbox" && cartItem.name && cartItem.unitAmount > 0) {
+        return {
+          id: String(cartItem.id),
+          name: cartItem.name,
+          category: cartItem.category || "",
+          quantity: normalizeQuantity(cartItem.quantity, cartItem.id),
+          unitAmount: cartItem.unitAmount,
+          image: cartItem.image || ""
+        };
+      }
+
       throw httpError(400, `Produit introuvable dans le catalogue: ${cartItem.id}`);
     }
 
-    const quantity = Number.parseInt(String(cartItem.quantity || 1), 10);
-    if (!Number.isFinite(quantity) || quantity <= 0) {
-      throw httpError(400, `Quantité invalide pour le produit ${cartItem.id}`);
-    }
+    const quantity = normalizeQuantity(cartItem.quantity, cartItem.id);
 
     return {
       id: found.id,
@@ -41,6 +49,14 @@ export function findCatalogItems(catalog, cartItems) {
       image: found.image
     };
   });
+}
+
+function normalizeQuantity(value, productId) {
+  const quantity = Number.parseInt(String(value || 1), 10);
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    throw httpError(400, `Quantité invalide pour le produit ${productId}`);
+  }
+  return quantity;
 }
 
 function normalizeProduct(raw) {
