@@ -1,0 +1,131 @@
+import http from "node:http";
+import { URL } from "node:url";
+import { config } from "./config.mjs";
+import { capturePayPalOrder, createPayPalOrder, verifyWebhook } from "./lib/paypal.mjs";
+import { attachPayPalOrder, buildDraftOrder, getOrder, markOrderPaidFromCapture } from "./lib/order-service.mjs";
+import { handleError, noContent, readJsonBody, sendJson, redirect } from "./lib/http.mjs";
+
+const server = http.createServer(async (request, response) => {
+  try {
+    if (!request.url || !request.method) {
+      sendJson(response, 400, { error: "Requête invalide." });
+      return;
+    }
+
+    if (request.method === "OPTIONS") {
+      noContent(response);
+      return;
+    }
+
+    const url = new URL(request.url, config.appBaseUrl);
+
+    if (request.method === "GET" && url.pathname === "/api/health") {
+      sendJson(response, 200, {
+        ok: true,
+        service: "payments-backend",
+        environment: config.nodeEnv,
+        paypalEnvironment: config.paypal.environment
+      });
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/checkout/paypal/order") {
+      const payload = await readJsonBody(request);
+      const order = await buildDraftOrder(payload);
+      const paypalOrder = await createPayPalOrder(order);
+      const savedOrder = attachPayPalOrder(order, paypalOrder);
+
+      sendJson(response, 201, {
+        orderNumber: savedOrder.orderNumber,
+        invoiceNumber: savedOrder.invoiceNumber,
+        paypalOrderId: savedOrder.paypal.orderId,
+        approvalUrl: savedOrder.paypal.approvalUrl,
+        totalAmount: savedOrder.totalAmount
+      });
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname.startsWith("/api/checkout/paypal/order/") && url.pathname.endsWith("/capture")) {
+      const parts = url.pathname.split("/");
+      const paypalOrderId = decodeURIComponent(parts[5] || "");
+      const capturePayload = await capturePayPalOrder(paypalOrderId);
+      const order = await markOrderPaidFromCapture(paypalOrderId, capturePayload);
+
+      sendJson(response, 200, {
+        ok: true,
+        orderNumber: order.orderNumber,
+        invoiceNumber: order.invoiceNumber,
+        status: order.status,
+        captureId: order.paypal.captureId,
+        invoicePath: order.invoice?.absolutePath || null
+      });
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/paypal/webhooks") {
+      const event = await readJsonBody(request);
+      const verified = await verifyWebhook(request.headers, event);
+
+      if (!verified) {
+        sendJson(response, 400, { error: "Webhook PayPal non vérifié." });
+        return;
+      }
+
+      if (event.event_type === "PAYMENT.CAPTURE.COMPLETED") {
+        const paypalOrderId = event.resource?.supplementary_data?.related_ids?.order_id;
+        if (paypalOrderId) {
+          try {
+            await markOrderPaidFromCapture(paypalOrderId, {
+              status: "COMPLETED",
+              payer: event.resource?.payer || null,
+              purchase_units: [
+                {
+                  payments: {
+                    captures: [
+                      {
+                        id: event.resource?.id,
+                        status: event.resource?.status || "COMPLETED"
+                      }
+                    ]
+                  }
+                }
+              ]
+            });
+          } catch (error) {
+            console.error("[webhook] capture sync failed", error);
+          }
+        }
+      }
+
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname.startsWith("/api/orders/")) {
+      const orderNumber = decodeURIComponent(url.pathname.split("/")[3] || "");
+      const order = getOrder(orderNumber);
+      sendJson(response, 200, { order });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/payment/success") {
+      const order = url.searchParams.get("order") || "";
+      redirect(response, `${config.siteBaseUrl}/?payment=success&order=${encodeURIComponent(order)}`);
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/payment/cancel") {
+      const order = url.searchParams.get("order") || "";
+      redirect(response, `${config.siteBaseUrl}/?payment=cancel&order=${encodeURIComponent(order)}`);
+      return;
+    }
+
+    sendJson(response, 404, { error: "Route introuvable." });
+  } catch (error) {
+    handleError(response, error);
+  }
+});
+
+server.listen(config.port, () => {
+  console.log(`Payments backend listening on ${config.appBaseUrl}`);
+});
