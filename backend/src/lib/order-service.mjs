@@ -114,6 +114,14 @@ export function getOrder(orderNumber) {
   return order;
 }
 
+export function getOrderByPayPalOrderId(paypalOrderId) {
+  const order = orderStore.findByPayPalOrderId(paypalOrderId);
+  if (!order) {
+    throw httpError(404, "Commande PayPal introuvable.");
+  }
+  return order;
+}
+
 function normalizeCart(value) {
   const items = Array.isArray(value) ? value : [];
   return items.map((item) => ({

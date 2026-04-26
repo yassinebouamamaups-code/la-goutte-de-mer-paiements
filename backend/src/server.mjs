@@ -2,7 +2,7 @@ import http from "node:http";
 import { URL } from "node:url";
 import { config } from "./config.mjs";
 import { capturePayPalOrder, createPayPalOrder, verifyWebhook } from "./lib/paypal.mjs";
-import { attachPayPalOrder, buildDraftOrder, getOrder, markOrderPaidFromCapture } from "./lib/order-service.mjs";
+import { attachPayPalOrder, buildDraftOrder, getOrder, getOrderByPayPalOrderId, markOrderPaidFromCapture } from "./lib/order-service.mjs";
 import { handleError, noContent, readJsonBody, sendJson, redirect } from "./lib/http.mjs";
 
 const server = http.createServer(async (request, response) => {
@@ -48,8 +48,18 @@ const server = http.createServer(async (request, response) => {
     if (request.method === "POST" && url.pathname.startsWith("/api/checkout/paypal/order/") && url.pathname.endsWith("/capture")) {
       const parts = url.pathname.split("/");
       const paypalOrderId = decodeURIComponent(parts[5] || "");
-      const capturePayload = await capturePayPalOrder(paypalOrderId);
-      const order = await markOrderPaidFromCapture(paypalOrderId, capturePayload);
+      let order = null;
+
+      try {
+        const capturePayload = await capturePayPalOrder(paypalOrderId);
+        order = await markOrderPaidFromCapture(paypalOrderId, capturePayload);
+      } catch (error) {
+        if (error?.statusCode === 409 || error?.statusCode === 422) {
+          order = getOrderByPayPalOrderId(paypalOrderId);
+        } else {
+          throw error;
+        }
+      }
 
       sendJson(response, 200, {
         ok: true,
@@ -109,14 +119,22 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET" && url.pathname === "/payment/success") {
-      const order = url.searchParams.get("order") || "";
-      redirect(response, `${config.siteBaseUrl}/?payment=success&order=${encodeURIComponent(order)}`);
+      const targetUrl = new URL(`${config.siteBaseUrl}/`);
+      url.searchParams.forEach((value, key) => {
+        targetUrl.searchParams.set(key, value);
+      });
+      targetUrl.searchParams.set("payment", "success");
+      redirect(response, targetUrl.toString());
       return;
     }
 
     if (request.method === "GET" && url.pathname === "/payment/cancel") {
-      const order = url.searchParams.get("order") || "";
-      redirect(response, `${config.siteBaseUrl}/?payment=cancel&order=${encodeURIComponent(order)}`);
+      const targetUrl = new URL(`${config.siteBaseUrl}/`);
+      url.searchParams.forEach((value, key) => {
+        targetUrl.searchParams.set(key, value);
+      });
+      targetUrl.searchParams.set("payment", "cancel");
+      redirect(response, targetUrl.toString());
       return;
     }
 

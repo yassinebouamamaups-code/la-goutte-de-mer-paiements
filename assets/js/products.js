@@ -5,6 +5,7 @@
 
     const CART_STORAGE_KEY = "laGoutteDeMerCart";
     const LAST_ORDER_STORAGE_KEY = "laGoutteDeMerLastOrder";
+    const PAYPAL_PENDING_STORAGE_KEY = "laGoutteDeMerPendingPayPalOrder";
     const DEFAULT_IMAGE_FALLBACK = "";
     const status = document.querySelector("[data-products-status]");
     const sourceUrl = window.PRODUCTS_SOURCE_URL || "https://docs.google.com/spreadsheets/d/1yZVWg-Ypzd2VtFE4tVf0XmVVvTqzgFu8TTq4KAyvsb0/export?format=csv&gid=1348794459";
@@ -20,11 +21,15 @@
 
     function resolveCheckoutConfig(customConfig) {
         const seller = customConfig.seller || {};
+        const backend = customConfig.backend || {};
         const paymentMethods = customConfig.paymentMethods || {};
         const documents = customConfig.documents || {};
         const emailDelivery = customConfig.emailDelivery || {};
 
         return {
+            backend: {
+                baseUrl: clean(backend.baseUrl)
+            },
             seller: {
                 brandName: seller.brandName || "La Goutte de Mer Shop",
                 email: seller.email || "lagouttedemer@gmail.com",
@@ -577,7 +582,7 @@
     function renderPaymentMethods() {
         const methods = getAvailablePaymentMethods();
         checkoutElements.paymentMethods.innerHTML = methods.map((method, index) => `
-            <label class="payment-method${method.checkoutUrl ? "" : " payment-method--pending"} payment-method--${escapeAttribute(method.id)}">
+            <label class="payment-method${isPaymentMethodReady(method) ? "" : " payment-method--pending"} payment-method--${escapeAttribute(method.id)}">
                 <input type="radio" name="paymentMethod" value="${escapeAttribute(method.id)}" ${index === 0 ? "checked" : ""}>
                 <span class="payment-method__content">
                     <span class="payment-method__brand">
@@ -585,7 +590,7 @@
                     </span>
                     <strong>${escapeHtml(method.label)}</strong>
                     <small>${escapeHtml(method.description)}</small>
-                    ${method.checkoutUrl ? "" : `<em>URL de paiement à configurer dans assets/js/checkout-config.js</em>`}
+                    ${isPaymentMethodReady(method) ? "" : `<em>Méthode de paiement à configurer dans assets/js/checkout-config.js</em>`}
                 </span>
             </label>
         `).join("");
@@ -593,6 +598,14 @@
 
     function getAvailablePaymentMethods() {
         return Object.values(shopConfig.paymentMethods).filter((method) => method.enabled);
+    }
+
+    function isPaymentMethodReady(method) {
+        if (method.id === "paypal") {
+            return Boolean(shopConfig.backend.baseUrl);
+        }
+
+        return Boolean(method.checkoutUrl);
     }
 
     function addToCart(product) {
@@ -708,6 +721,34 @@
             return;
         }
 
+        if (paymentMethod.id === "paypal" && shopConfig.backend.baseUrl) {
+            const submitButton = checkoutElements.form.querySelector("[type='submit']");
+            checkoutElements.feedback.textContent = "Création de la commande PayPal...";
+            submitButton.disabled = true;
+
+            try {
+                const remoteOrder = await createPayPalBackendOrder(items, customer);
+                const pendingOrder = {
+                    orderNumber: remoteOrder.orderNumber,
+                    invoiceNumber: remoteOrder.invoiceNumber,
+                    paypalOrderId: remoteOrder.paypalOrderId,
+                    customer
+                };
+
+                currentOrder = pendingOrder;
+                saveLastOrder(pendingOrder);
+                savePendingPayPalOrder(pendingOrder);
+                window.location.href = remoteOrder.approvalUrl;
+                return;
+            } catch (error) {
+                checkoutElements.feedback.textContent = error.message || "La création du paiement PayPal a échoué.";
+            } finally {
+                submitButton.disabled = false;
+            }
+
+            return;
+        }
+
         checkoutElements.feedback.textContent = "Préparation de la commande et des emails...";
 
         const order = createOrder(items, customer, paymentMethod);
@@ -749,6 +790,46 @@
         saveCart([]);
         renderCart();
         closeCart();
+    }
+
+    async function createPayPalBackendOrder(items, customer) {
+        const response = await fetch(`${shopConfig.backend.baseUrl}/api/checkout/paypal/order`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                cart: items.map((item) => ({
+                    id: item.id,
+                    quantity: 1
+                })),
+                customer
+            })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.approvalUrl || !payload.paypalOrderId) {
+            throw new Error(payload?.error?.message || "Impossible de lancer PayPal.");
+        }
+
+        return payload;
+    }
+
+    function savePendingPayPalOrder(order) {
+        localStorage.setItem(PAYPAL_PENDING_STORAGE_KEY, JSON.stringify(order));
+    }
+
+    function loadPendingPayPalOrder() {
+        try {
+            const saved = localStorage.getItem(PAYPAL_PENDING_STORAGE_KEY);
+            return saved ? JSON.parse(saved) : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function clearPendingPayPalOrder() {
+        localStorage.removeItem(PAYPAL_PENDING_STORAGE_KEY);
     }
 
     function createOrder(items, customer, paymentMethod) {
@@ -1111,9 +1192,91 @@
         URL.revokeObjectURL(url);
     }
 
+    function showCheckoutReturnBanner(type, message) {
+        const existing = document.querySelector("[data-checkout-return-banner]");
+        if (existing) existing.remove();
+
+        const banner = document.createElement("div");
+        banner.dataset.checkoutReturnBanner = "true";
+        banner.style.position = "fixed";
+        banner.style.left = "16px";
+        banner.style.right = "16px";
+        banner.style.bottom = "16px";
+        banner.style.zIndex = "9999";
+        banner.style.padding = "16px 18px";
+        banner.style.borderRadius = "16px";
+        banner.style.boxShadow = "0 18px 40px rgba(0,0,0,0.18)";
+        banner.style.background = type === "success" ? "#173f35" : "#6c1f1f";
+        banner.style.color = "#fff";
+        banner.style.fontSize = "15px";
+        banner.style.lineHeight = "1.5";
+        banner.innerHTML = `
+            <strong style="display:block;margin-bottom:4px;">${type === "success" ? "Paiement confirmé" : "Paiement annulé"}</strong>
+            <span>${escapeHtml(message)}</span>
+        `;
+
+        document.body.appendChild(banner);
+    }
+
+    async function handlePaymentReturn() {
+        const url = new URL(window.location.href);
+        const payment = clean(url.searchParams.get("payment"));
+        if (!payment) return;
+
+        const orderNumber = clean(url.searchParams.get("order"));
+        const paypalOrderId = clean(url.searchParams.get("token"));
+        const pendingOrder = loadPendingPayPalOrder();
+
+        if (payment === "cancel") {
+            showCheckoutReturnBanner("error", "Le paiement PayPal a été annulé. Ton panier est resté intact.");
+            cleanupPaymentUrl(url);
+            return;
+        }
+
+        if (payment !== "success" || !paypalOrderId) {
+            cleanupPaymentUrl(url);
+            return;
+        }
+
+        if (pendingOrder?.paypalOrderId && pendingOrder.paypalOrderId !== paypalOrderId) {
+            showCheckoutReturnBanner("error", "Le paiement retourné ne correspond pas à la commande en attente.");
+            cleanupPaymentUrl(url);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${shopConfig.backend.baseUrl}/api/checkout/paypal/order/${encodeURIComponent(paypalOrderId)}/capture`, {
+                method: "POST"
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(payload?.error?.message || "La capture du paiement a échoué.");
+            }
+
+            clearPendingPayPalOrder();
+            saveCart([]);
+            renderCart();
+            showCheckoutReturnBanner("success", `Commande ${payload.orderNumber || orderNumber} confirmée. La facture et les emails sont désormais gérés par le backend.`);
+        } catch (error) {
+            showCheckoutReturnBanner("error", error.message || "La confirmation du paiement PayPal a échoué.");
+        } finally {
+            cleanupPaymentUrl(url);
+        }
+    }
+
+    function cleanupPaymentUrl(url) {
+        url.searchParams.delete("payment");
+        url.searchParams.delete("order");
+        url.searchParams.delete("token");
+        url.searchParams.delete("PayerID");
+        window.history.replaceState({}, "", url.toString());
+    }
+
     setupCart();
     setupCheckout();
     enableImageFallbacks();
+    handlePaymentReturn();
 
     fetch(cacheSafeSourceUrl)
         .then((response) => {

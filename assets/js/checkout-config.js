@@ -1,4 +1,7 @@
 window.SHOP_CHECKOUT_CONFIG = {
+    backend: {
+        baseUrl: "https://la-goutte-de-mer-paiements.onrender.com"
+    },
     seller: {
         brandName: "La Goutte de Mer Shop",
         email: "yassine.bouamama.ups@gmail.com",
@@ -20,8 +23,8 @@ window.SHOP_CHECKOUT_CONFIG = {
         paypal: {
             enabled: true,
             label: "PayPal",
-            description: "Paiement sécurisé via PayPal.",
-            checkoutUrl: "https://paypal.me/yassinebouamama"
+            description: "Paiement securise via PayPal.",
+            checkoutUrl: ""
         }
     },
     emailDelivery: {
