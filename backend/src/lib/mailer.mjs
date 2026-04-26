@@ -3,9 +3,14 @@ import { formatPrice } from "./invoice.mjs";
 
 export async function sendOrderEmails(order, invoice) {
   const clientName = `${order.customer.firstName} ${order.customer.lastName}`.trim();
-  const clientSubject = `${order.orderNumber} - Récapitulatif de commande`;
+  const clientSubject = `${order.orderNumber} - Recapitulatif de commande`;
   const invoiceSubject = `${order.invoiceNumber} - Votre facture`;
-  const sellerSubject = `${order.invoiceNumber} - Nouvelle commande réglée`;
+  const sellerSubject = `${order.invoiceNumber} - Nouvelle commande reglee`;
+  const legalLinks = buildLegalLinks();
+  const invoiceAttachment = {
+    filename: invoice.fileName,
+    content: Buffer.from(invoice.html, "utf8").toString("base64")
+  };
 
   await sendEmail({
     to: order.customer.email,
@@ -15,7 +20,8 @@ export async function sendOrderEmails(order, invoice) {
       <p>Merci pour votre commande chez ${escapeHtml(config.seller.brandName)}.</p>
       <p>Commande : <strong>${escapeHtml(order.orderNumber)}</strong><br>Montant : <strong>${escapeHtml(formatPrice(order.totalAmount))}</strong></p>
       ${buildItemsList(order)}
-      <p>Votre facture est envoyée dans un second email.</p>
+      <p>Votre facture est envoyee dans un second email.</p>
+      ${legalLinks}
     `),
     replyTo: config.seller.email,
     debugLabel: `client-summary:${clientName}`
@@ -24,8 +30,14 @@ export async function sendOrderEmails(order, invoice) {
   await sendEmail({
     to: order.customer.email,
     subject: invoiceSubject,
-    html: invoice.html,
+    html: wrapEmail(`
+      <p>Bonjour ${escapeHtml(order.customer.firstName)},</p>
+      <p>Veuillez trouver votre facture en piece jointe au format HTML.</p>
+      <p>Facture : <strong>${escapeHtml(order.invoiceNumber)}</strong><br>Commande : <strong>${escapeHtml(order.orderNumber)}</strong></p>
+      ${legalLinks}
+    `),
     replyTo: config.seller.email,
+    attachments: [invoiceAttachment],
     debugLabel: `client-invoice:${clientName}`
   });
 
@@ -33,14 +45,16 @@ export async function sendOrderEmails(order, invoice) {
     to: config.email.clientNotificationEmail || config.seller.email,
     subject: sellerSubject,
     html: wrapEmail(`
-      <p>Nouvelle commande payée.</p>
+      <p>Nouvelle commande payee.</p>
       <p>Commande : <strong>${escapeHtml(order.orderNumber)}</strong><br>Facture : <strong>${escapeHtml(order.invoiceNumber)}</strong></p>
-      <p>Client : ${escapeHtml(clientName)}<br>Email : ${escapeHtml(order.customer.email)}<br>Téléphone : ${escapeHtml(order.customer.phone)}</p>
+      <p>Client : ${escapeHtml(clientName)}<br>Email : ${escapeHtml(order.customer.email)}<br>Telephone : ${escapeHtml(order.customer.phone)}</p>
       ${buildItemsList(order)}
       <p>Total : <strong>${escapeHtml(formatPrice(order.totalAmount))}</strong></p>
       <p>Identifiant capture PayPal : ${escapeHtml(order.paypal.captureId || "")}</p>
+      ${legalLinks}
     `),
     replyTo: order.customer.email,
+    attachments: [invoiceAttachment],
     debugLabel: "seller-notification"
   });
 }
@@ -56,7 +70,7 @@ async function sendEmail(message) {
     return;
   }
 
-  throw new Error(`EMAIL_PROVIDER non supporté: ${config.email.provider}`);
+  throw new Error(`EMAIL_PROVIDER non supporte: ${config.email.provider}`);
 }
 
 async function sendViaResend(message) {
@@ -68,20 +82,22 @@ async function sendViaResend(message) {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.email.resendApiKey}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "User-Agent": "la-goutte-de-mer-payments/1.0"
     },
     body: JSON.stringify({
       from: config.email.from,
       to: [message.to],
       subject: message.subject,
       html: message.html,
-      reply_to: message.replyTo || undefined
+      reply_to: message.replyTo || undefined,
+      attachments: message.attachments || undefined
     })
   });
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Resend a refusé l'email: ${body}`);
+    throw new Error(`Resend a refuse l'email: ${body}`);
   }
 }
 
@@ -92,6 +108,21 @@ function wrapEmail(content) {
 function buildItemsList(order) {
   const rows = order.items.map((item) => `<li>${escapeHtml(item.name)} x${item.quantity} - ${escapeHtml(formatPrice(item.unitAmount * item.quantity))}</li>`).join("");
   return `<ul>${rows}</ul>`;
+}
+
+function buildLegalLinks() {
+  if (!config.siteBaseUrl) return "";
+
+  return `
+    <hr style="border:none;border-top:1px solid #e7dcc8;margin:24px 0;">
+    <p style="font-size:14px;color:#6f5f43;margin:0 0 8px;">Documents utiles :</p>
+    <p style="font-size:14px;color:#6f5f43;margin:0;">
+      <a href="${config.siteBaseUrl}/cgv.html">CGV</a> |
+      <a href="${config.siteBaseUrl}/confidentialite.html">Politique de confidentialite</a> |
+      <a href="${config.siteBaseUrl}/mentions-legales.html">Mentions legales</a> |
+      <a href="${config.siteBaseUrl}/formulaire-retractation.html">Formulaire de retractation</a>
+    </p>
+  `;
 }
 
 function escapeHtml(value) {
