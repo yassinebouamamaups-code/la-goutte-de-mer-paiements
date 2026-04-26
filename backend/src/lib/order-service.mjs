@@ -46,7 +46,7 @@ export async function buildDraftOrder(payload) {
 }
 
 export function attachPayPalOrder(order, paypalOrder) {
-  const approvalLink = (paypalOrder.links || []).find((link) => link.rel === "approve")?.href || "";
+  const approvalLink = (paypalOrder.links || []).find((link) => ["approve", "payer-action"].includes(link.rel))?.href || "";
   const next = {
     ...order,
     status: "paypal_created",

@@ -103,6 +103,7 @@ async function paypalRequest(resourcePath, options) {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
+      Prefer: "return=representation",
       "PayPal-Request-Id": crypto.randomUUID()
     },
     body: options.body ? JSON.stringify(options.body) : undefined
