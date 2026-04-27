@@ -29,6 +29,7 @@ export function findCatalogItems(catalog, cartItems) {
           id: String(cartItem.id),
           name: cartItem.name,
           category: cartItem.category || "",
+          size: cartItem.size || "",
           quantity: normalizeQuantity(cartItem.quantity, cartItem.id),
           unitAmount: cartItem.unitAmount,
           image: cartItem.image || ""
@@ -44,6 +45,7 @@ export function findCatalogItems(catalog, cartItems) {
       id: found.id,
       name: found.name,
       category: found.category,
+      size: found.size,
       quantity,
       unitAmount: found.unitAmount,
       image: found.image
@@ -64,6 +66,7 @@ function normalizeProduct(raw) {
     id: clean(raw.id),
     name: clean(raw.nom),
     category: clean(raw.categorie),
+    size: clean(raw.taille),
     image: clean((raw.photos || "").split(/[|;]/)[0]),
     unitAmount: parsePrice(raw.promo || raw.prix)
   };

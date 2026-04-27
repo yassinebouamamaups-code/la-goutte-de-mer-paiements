@@ -12,7 +12,7 @@ export function formatPrice(value) {
 export function buildInvoiceHtml(order) {
   const itemRows = order.items.map((item) => `
     <tr>
-      <td>${escapeHtml(item.name)}</td>
+      <td>${escapeHtml(item.name)}${item.size ? `<br><small>Taille : ${escapeHtml(item.size)}</small>` : ""}</td>
       <td>${item.quantity}</td>
       <td>${escapeHtml(formatPrice(item.unitAmount))}</td>
       <td>${escapeHtml(formatPrice(item.unitAmount * item.quantity))}</td>

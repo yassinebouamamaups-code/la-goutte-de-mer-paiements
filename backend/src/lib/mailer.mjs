@@ -106,7 +106,7 @@ function wrapEmail(content) {
 }
 
 function buildItemsList(order) {
-  const rows = order.items.map((item) => `<li>${escapeHtml(item.name)} x${item.quantity} - ${escapeHtml(formatPrice(item.unitAmount * item.quantity))}</li>`).join("");
+  const rows = order.items.map((item) => `<li>${escapeHtml(item.name)}${item.size ? ` - taille ${escapeHtml(item.size)}` : ""} x${item.quantity} - ${escapeHtml(formatPrice(item.unitAmount * item.quantity))}</li>`).join("");
   return `<ul>${rows}</ul>`;
 }
 

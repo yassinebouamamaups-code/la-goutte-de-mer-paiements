@@ -199,6 +199,7 @@ function normalizeCart(value) {
     quantity: Number.parseInt(String(item?.quantity || 1), 10),
     name: clean(item?.name),
     category: clean(item?.category),
+    size: clean(item?.size),
     image: clean(item?.image),
     unitAmount: parseClientAmount(item?.unitAmount ?? item?.price)
   })).filter((item) => item.id);

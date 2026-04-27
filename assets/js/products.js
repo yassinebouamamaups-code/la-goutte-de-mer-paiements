@@ -80,6 +80,24 @@
         return String(value || "").trim();
     }
 
+    function normalizeCategory(value) {
+        const normalized = clean(value)
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z]/g, "");
+
+        if (normalized.startsWith("homme")) return "hommes";
+        if (normalized.startsWith("femme")) return "femmes";
+        if (normalized.startsWith("accessoire")) return "accessoires";
+        return clean(value).toLowerCase();
+    }
+
+    function categoryPage(product) {
+        const category = normalizeCategory(product.categorie);
+        return ["hommes", "femmes", "accessoires"].includes(category) ? `${category}.html` : "index.html";
+    }
+
     function escapeHtml(value) {
         const div = document.createElement("div");
         div.textContent = clean(value);
@@ -240,6 +258,12 @@
         return `<p class="${className} price"><span>${price}</span></p>`;
     }
 
+    function sizeMarkup(product, className) {
+        const size = clean(product.taille);
+        if (!size) return "";
+        return `<p class="${className}">Taille : <span>${escapeHtml(size)}</span></p>`;
+    }
+
     function catalogCard(product) {
         const photos = photosOf(product);
         const mainPhoto = photos[0] || DEFAULT_IMAGE_FALLBACK;
@@ -259,6 +283,7 @@
                 <div class="catalog-card__content">
                     <p class="catalog-card__status">${product.statut || "disponible"}</p>
                     <h2>${product.nom}</h2>
+                    ${sizeMarkup(product, "catalog-card__size")}
                     <p>${product.description}</p>
                     ${priceMarkup(product, "catalog-card__price")}
                     <button
@@ -270,6 +295,7 @@
                         data-price="${escapeAttribute(productPrice(product))}"
                         data-category="${escapeAttribute(product.categorie)}"
                         data-image="${escapeAttribute(mainPhoto)}"
+                        data-size="${escapeAttribute(product.taille)}"
                     >Ajouter au panier</button>
                 </div>
             </article>
@@ -283,9 +309,10 @@
 
         return `
             <article class="mini-product">
-                <a href="${product.categorie}.html" aria-label="Voir l'article">
+                <a href="${categoryPage(product)}" aria-label="Voir l'article">
                     <img src="${mainPhoto}" alt="" data-fallback-photo="${escapeAttribute(fallbackPhoto)}">
                     <h3>${product.nom}</h3>
+                    ${sizeMarkup(product, "mini-product__size")}
                     ${priceMarkup(product, "mini-product__price")}
                 </a>
                 <button
@@ -297,6 +324,7 @@
                     data-price="${escapeAttribute(productPrice(product))}"
                     data-category="${escapeAttribute(product.categorie)}"
                     data-image="${escapeAttribute(mainPhoto)}"
+                    data-size="${escapeAttribute(product.taille)}"
                 >Ajouter au panier</button>
             </article>
         `;
@@ -305,8 +333,8 @@
     function renderCatalog(products) {
         if (!productGrid) return;
 
-        const category = productGrid.dataset.category;
-        const filtered = products.filter((product) => product.categorie === category);
+        const category = normalizeCategory(productGrid.dataset.category);
+        const filtered = products.filter((product) => normalizeCategory(product.categorie) === category);
         if (!filtered.length) {
             productGrid.innerHTML = `<p class="catalog-empty">Aucun article disponible pour le moment.</p>`;
             if (status) status.textContent = "0 article";
@@ -447,7 +475,8 @@
                 name: addButton.dataset.name,
                 price: addButton.dataset.price,
                 category: addButton.dataset.category,
-                image: addButton.dataset.image
+                image: addButton.dataset.image,
+                size: addButton.dataset.size
             });
 
             addButton.textContent = "Dans le panier";
@@ -638,6 +667,7 @@
                     <div>
                         <h3>${escapeHtml(item.name)}</h3>
                         ${item.category ? `<p>${escapeHtml(item.category)}</p>` : ""}
+                        ${item.size ? `<p class="cart-item__size">Taille : ${escapeHtml(item.size)}</p>` : ""}
                         <strong>${escapeHtml(displayPrice(item.price))}</strong>
                     </div>
                     <button type="button" data-remove-cart-item="${escapeAttribute(item.id)}" aria-label="Retirer ${escapeAttribute(item.name)}">&times;</button>
@@ -656,6 +686,7 @@
                 <div>
                     <strong>${escapeHtml(item.name)}</strong>
                     ${item.category ? `<small>${escapeHtml(item.category)}</small>` : ""}
+                    ${item.size ? `<small>Taille : ${escapeHtml(item.size)}</small>` : ""}
                 </div>
                 <span>${escapeHtml(displayPrice(item.price))}</span>
             </article>
@@ -832,6 +863,7 @@
                     name: item.name,
                     category: item.category,
                     image: item.image,
+                    size: item.size,
                     price: item.price,
                     unitAmount: parsePrice(item.price)
                 })),
@@ -860,6 +892,7 @@
                     name: item.name,
                     category: item.category,
                     image: item.image,
+                    size: item.size,
                     price: item.price,
                     unitAmount: parsePrice(item.price)
                 })),
@@ -1108,7 +1141,7 @@
         ];
 
         order.items.forEach((item) => {
-            lines.push(`- ${item.name} : ${formatPrice(item.unitAmount)}`);
+            lines.push(`- ${item.name}${item.size ? ` (taille ${item.size})` : ""} : ${formatPrice(item.unitAmount)}`);
         });
 
         lines.push("");
@@ -1148,7 +1181,7 @@
         ];
 
         order.items.forEach((item) => {
-            lines.push(`- ${item.name} (${item.category || "collection"}) : ${formatPrice(item.unitAmount)}`);
+            lines.push(`- ${item.name}${item.size ? ` - taille ${item.size}` : ""} (${item.category || "collection"}) : ${formatPrice(item.unitAmount)}`);
         });
 
         lines.push("");
@@ -1190,7 +1223,7 @@
     function buildInvoiceDocument(order) {
         const itemsMarkup = order.items.map((item) => `
             <tr>
-                <td>${escapeHtml(item.name)}</td>
+                <td>${escapeHtml(item.name)}${item.size ? `<br><small>Taille : ${escapeHtml(item.size)}</small>` : ""}</td>
                 <td>1</td>
                 <td>${escapeHtml(formatPrice(item.unitAmount))}</td>
                 <td>${escapeHtml(formatPrice(item.unitAmount))}</td>

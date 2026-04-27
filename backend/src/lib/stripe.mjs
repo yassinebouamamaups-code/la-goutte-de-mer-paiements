@@ -24,8 +24,9 @@ export async function createStripeCheckoutSession(order) {
     params.set(`line_items[${index}][price_data][currency]`, config.stripe.currency);
     params.set(`line_items[${index}][price_data][unit_amount]`, String(toMinorUnits(item.unitAmount)));
     params.set(`line_items[${index}][price_data][product_data][name]`, item.name);
-    if (item.category) {
-      params.set(`line_items[${index}][price_data][product_data][description]`, item.category);
+    const descriptionParts = [item.category, item.size ? `Taille ${item.size}` : ""].filter(Boolean);
+    if (descriptionParts.length) {
+      params.set(`line_items[${index}][price_data][product_data][description]`, descriptionParts.join(" - "));
     }
   });
 
