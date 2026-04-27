@@ -1287,12 +1287,23 @@
         banner.style.color = "#fff";
         banner.style.fontSize = "15px";
         banner.style.lineHeight = "1.5";
+        banner.style.opacity = "1";
+        banner.style.transition = "opacity 260ms ease, transform 260ms ease";
         banner.innerHTML = `
             <strong style="display:block;margin-bottom:4px;">${type === "success" ? "Paiement confirmé" : "Paiement annulé"}</strong>
             <span>${escapeHtml(message)}</span>
         `;
 
         document.body.appendChild(banner);
+
+        window.setTimeout(() => {
+            banner.style.opacity = "0";
+            banner.style.transform = "translateY(10px)";
+
+            window.setTimeout(() => {
+                banner.remove();
+            }, 260);
+        }, 4500);
     }
 
     async function handlePaymentReturn() {
