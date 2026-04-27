@@ -6,6 +6,7 @@
     const CART_STORAGE_KEY = "laGoutteDeMerCart";
     const LAST_ORDER_STORAGE_KEY = "laGoutteDeMerLastOrder";
     const PAYPAL_PENDING_STORAGE_KEY = "laGoutteDeMerPendingPayPalOrder";
+    const STRIPE_PENDING_STORAGE_KEY = "laGoutteDeMerPendingStripeSession";
     const DEFAULT_IMAGE_FALLBACK = "";
     const status = document.querySelector("[data-products-status]");
     const sourceUrl = window.PRODUCTS_SOURCE_URL || "https://docs.google.com/spreadsheets/d/1yZVWg-Ypzd2VtFE4tVf0XmVVvTqzgFu8TTq4KAyvsb0/export?format=csv&gid=1348794459";
@@ -600,7 +601,7 @@
     }
 
     function isPaymentMethodReady(method) {
-        if (method.id === "paypal") {
+        if (method.id === "paypal" || method.id === "stripe") {
             return Boolean(shopConfig.backend.baseUrl);
         }
 
@@ -748,6 +749,34 @@
             return;
         }
 
+        if (paymentMethod.id === "stripe" && shopConfig.backend.baseUrl) {
+            const submitButton = checkoutElements.form.querySelector("[type='submit']");
+            checkoutElements.feedback.textContent = "Création de la session Stripe...";
+            submitButton.disabled = true;
+
+            try {
+                const remoteSession = await createStripeBackendSession(items, customer);
+                const pendingSession = {
+                    orderNumber: remoteSession.orderNumber,
+                    invoiceNumber: remoteSession.invoiceNumber,
+                    stripeSessionId: remoteSession.stripeSessionId,
+                    customer
+                };
+
+                currentOrder = pendingSession;
+                saveLastOrder(pendingSession);
+                savePendingStripeSession(pendingSession);
+                window.location.href = remoteSession.checkoutUrl;
+                return;
+            } catch (error) {
+                checkoutElements.feedback.textContent = error.message || "La création du paiement Stripe a échoué.";
+            } finally {
+                submitButton.disabled = false;
+            }
+
+            return;
+        }
+
         checkoutElements.feedback.textContent = "Préparation de la commande et des emails...";
 
         const order = createOrder(items, customer, paymentMethod);
@@ -819,6 +848,34 @@
         return payload;
     }
 
+    async function createStripeBackendSession(items, customer) {
+        const response = await fetch(`${shopConfig.backend.baseUrl}/api/checkout/stripe/session`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                cart: items.map((item) => ({
+                    id: item.id,
+                    quantity: 1,
+                    name: item.name,
+                    category: item.category,
+                    image: item.image,
+                    price: item.price,
+                    unitAmount: parsePrice(item.price)
+                })),
+                customer
+            })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.checkoutUrl || !payload.stripeSessionId) {
+            throw new Error(payload?.error?.message || "Impossible de lancer Stripe.");
+        }
+
+        return payload;
+    }
+
     function savePendingPayPalOrder(order) {
         localStorage.setItem(PAYPAL_PENDING_STORAGE_KEY, JSON.stringify(order));
     }
@@ -834,6 +891,23 @@
 
     function clearPendingPayPalOrder() {
         localStorage.removeItem(PAYPAL_PENDING_STORAGE_KEY);
+    }
+
+    function savePendingStripeSession(session) {
+        localStorage.setItem(STRIPE_PENDING_STORAGE_KEY, JSON.stringify(session));
+    }
+
+    function loadPendingStripeSession() {
+        try {
+            const saved = localStorage.getItem(STRIPE_PENDING_STORAGE_KEY);
+            return saved ? JSON.parse(saved) : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function clearPendingStripeSession() {
+        localStorage.removeItem(STRIPE_PENDING_STORAGE_KEY);
     }
 
     function createOrder(items, customer, paymentMethod) {
@@ -1225,15 +1299,21 @@
     async function handlePaymentReturn() {
         const url = new URL(window.location.href);
         const payment = clean(url.searchParams.get("payment"));
+        const provider = clean(url.searchParams.get("provider"));
         if (!payment) return;
 
         const orderNumber = clean(url.searchParams.get("order"));
         const paypalOrderId = clean(url.searchParams.get("token"));
-        const pendingOrder = loadPendingPayPalOrder();
+        const pendingOrder = provider === "stripe" ? loadPendingStripeSession() : loadPendingPayPalOrder();
 
         if (payment === "cancel") {
-            showCheckoutReturnBanner("error", "Le paiement PayPal a été annulé. Ton panier est resté intact.");
+            showCheckoutReturnBanner("error", `Le paiement ${provider === "stripe" ? "Stripe" : "PayPal"} a été annulé. Ton panier est resté intact.`);
             cleanupPaymentUrl(url);
+            return;
+        }
+
+        if (provider === "stripe") {
+            await handleStripeReturn(url, pendingOrder);
             return;
         }
 
@@ -1269,9 +1349,49 @@
         }
     }
 
+    async function handleStripeReturn(url, pendingSession) {
+        const sessionId = clean(url.searchParams.get("session_id"));
+        const orderNumber = clean(url.searchParams.get("order"));
+
+        if (!sessionId) {
+            cleanupPaymentUrl(url);
+            return;
+        }
+
+        if (pendingSession?.stripeSessionId && pendingSession.stripeSessionId !== sessionId) {
+            showCheckoutReturnBanner("error", "La session Stripe retournée ne correspond pas à la commande en attente.");
+            cleanupPaymentUrl(url);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${shopConfig.backend.baseUrl}/api/checkout/stripe/session/${encodeURIComponent(sessionId)}`);
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(payload?.error?.message || "Impossible de verifier le paiement Stripe.");
+            }
+
+            if (payload.paymentStatus === "paid") {
+                clearPendingStripeSession();
+                saveCart([]);
+                renderCart();
+                showCheckoutReturnBanner("success", `Commande ${payload.orderNumber || orderNumber} confirmée via Stripe.`);
+            } else {
+                showCheckoutReturnBanner("success", `La session Stripe ${payload.orderNumber || orderNumber} est revenue avec le statut ${payload.paymentStatus || payload.status}. Le webhook finalisera la commande dès confirmation.`);
+            }
+        } catch (error) {
+            showCheckoutReturnBanner("error", error.message || "La vérification du paiement Stripe a échoué.");
+        } finally {
+            cleanupPaymentUrl(url);
+        }
+    }
+
     function cleanupPaymentUrl(url) {
         url.searchParams.delete("payment");
         url.searchParams.delete("order");
+        url.searchParams.delete("provider");
+        url.searchParams.delete("session_id");
         url.searchParams.delete("token");
         url.searchParams.delete("PayerID");
         window.history.replaceState({}, "", url.toString());

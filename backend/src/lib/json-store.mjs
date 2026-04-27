@@ -36,6 +36,12 @@ export const orderStore = {
   findByPayPalCaptureId(captureId) {
     return readOrders().find((entry) => entry.paypal?.captureId === captureId) || null;
   },
+  findByStripeSessionId(sessionId) {
+    return readOrders().find((entry) => entry.stripe?.sessionId === sessionId) || null;
+  },
+  findByStripePaymentIntentId(paymentIntentId) {
+    return readOrders().find((entry) => entry.stripe?.paymentIntentId === paymentIntentId) || null;
+  },
   save(order) {
     const orders = readOrders();
     const index = orders.findIndex((entry) => entry.orderNumber === order.orderNumber);

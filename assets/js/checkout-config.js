@@ -15,7 +15,7 @@ window.SHOP_CHECKOUT_CONFIG = {
     },
     paymentMethods: {
         stripe: {
-            enabled: false,
+            enabled: true,
             label: "Stripe",
             description: "Paiement par carte bancaire via Stripe.",
             checkoutUrl: ""

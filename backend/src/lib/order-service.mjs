@@ -25,7 +25,7 @@ export async function buildDraftOrder(payload) {
     createdAt: now.toISOString(),
     createdAtLabel: now.toLocaleString("fr-FR"),
     status: "draft",
-    paymentProvider: "paypal",
+    paymentProvider: clean(payload.paymentProvider || "paypal") || "paypal",
     customer,
     items,
     totalAmount,
@@ -34,6 +34,12 @@ export async function buildDraftOrder(payload) {
       orderId: null,
       captureId: null,
       status: "created"
+    },
+    stripe: {
+      sessionId: null,
+      paymentIntentId: null,
+      status: "created",
+      checkoutUrl: null
     },
     invoice: null,
     notifications: {
@@ -55,6 +61,24 @@ export function attachPayPalOrder(order, paypalOrder) {
       orderId: paypalOrder.id,
       status: paypalOrder.status || "CREATED",
       approvalUrl: approvalLink
+    }
+  };
+
+  orderStore.save(next);
+  return next;
+}
+
+export function attachStripeSession(order, stripeSession) {
+  const next = {
+    ...order,
+    status: "stripe_created",
+    stripe: {
+      ...order.stripe,
+      sessionId: stripeSession.id,
+      paymentIntentId: stripeSession.payment_intent || null,
+      checkoutUrl: stripeSession.url || null,
+      status: stripeSession.status || "open",
+      rawSession: stripeSession
     }
   };
 
@@ -106,6 +130,44 @@ export async function markOrderPaidFromCapture(paypalOrderId, capturePayload) {
   return next;
 }
 
+export async function markOrderPaidFromStripeSession(sessionId, sessionPayload) {
+  const existing = orderStore.findByStripeSessionId(sessionId);
+  if (!existing) {
+    throw httpError(404, "Commande locale introuvable pour cette session Stripe.");
+  }
+
+  const next = {
+    ...existing,
+    status: "paid",
+    paidAt: new Date().toISOString(),
+    stripe: {
+      ...existing.stripe,
+      sessionId: sessionPayload.id || existing.stripe.sessionId,
+      paymentIntentId: sessionPayload.payment_intent || existing.stripe.paymentIntentId,
+      status: sessionPayload.payment_status || sessionPayload.status || "paid",
+      rawSession: sessionPayload
+    }
+  };
+
+  const invoice = writeInvoice(next);
+  next.invoice = {
+    fileName: invoice.fileName,
+    absolutePath: invoice.absolutePath
+  };
+  orderStore.save(next);
+
+  if (!next.notifications.emailedAt) {
+    await sendOrderEmails(next, invoice);
+    next.notifications = {
+      ...next.notifications,
+      emailedAt: new Date().toISOString()
+    };
+    orderStore.save(next);
+  }
+
+  return next;
+}
+
 export function getOrder(orderNumber) {
   const order = orderStore.findByOrderNumber(orderNumber);
   if (!order) {
@@ -118,6 +180,14 @@ export function getOrderByPayPalOrderId(paypalOrderId) {
   const order = orderStore.findByPayPalOrderId(paypalOrderId);
   if (!order) {
     throw httpError(404, "Commande PayPal introuvable.");
+  }
+  return order;
+}
+
+export function getOrderByStripeSessionId(sessionId) {
+  const order = orderStore.findByStripeSessionId(sessionId);
+  if (!order) {
+    throw httpError(404, "Commande Stripe introuvable.");
   }
   return order;
 }

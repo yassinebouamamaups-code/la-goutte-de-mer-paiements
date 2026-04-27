@@ -34,6 +34,15 @@ export const config = {
     locale: process.env.PAYPAL_LOCALE || "fr-FR",
     shippingPreference: process.env.PAYPAL_SHIPPING_PREFERENCE || "SET_PROVIDED_ADDRESS"
   },
+  stripe: {
+    environment: (process.env.STRIPE_ENV || "test").toLowerCase(),
+    secretKey: process.env.STRIPE_SECRET_KEY || "",
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
+    currency: (process.env.STRIPE_CURRENCY || "eur").toLowerCase(),
+    successPath: process.env.STRIPE_SUCCESS_PATH || "/payment/stripe/success",
+    cancelPath: process.env.STRIPE_CANCEL_PATH || "/payment/stripe/cancel"
+  },
   seller: {
     brandName: process.env.SELLER_BRAND_NAME || "La Goutte de Mer Shop",
     email: process.env.SELLER_EMAIL || "",
@@ -58,6 +67,10 @@ export function paypalApiBase() {
   return config.paypal.environment === "live"
     ? "https://api-m.paypal.com"
     : "https://api-m.sandbox.paypal.com";
+}
+
+export function hasStripeConfig() {
+  return Boolean(config.stripe.secretKey);
 }
 
 function ensureDir(target) {
