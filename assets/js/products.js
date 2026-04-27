@@ -1340,7 +1340,7 @@
             clearPendingPayPalOrder();
             saveCart([]);
             renderCart();
-            showCheckoutReturnBanner("success", `Commande ${payload.orderNumber || orderNumber} confirmée. La facture et les emails sont désormais gérés par le backend.`);
+            showCheckoutReturnBanner("success", `Commande ${payload.orderNumber || orderNumber} confirmée.`);
         } catch (error) {
             showCheckoutReturnBanner("error", error.message || "La confirmation du paiement PayPal a échoué.");
         } finally {
