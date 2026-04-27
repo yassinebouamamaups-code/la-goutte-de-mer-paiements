@@ -532,7 +532,7 @@
                     <p class="checkout-feedback" data-checkout-feedback></p>
                     <div class="checkout-actions">
                         <button type="button" class="checkout-actions__secondary" data-checkout-cancel>Retour au panier</button>
-                        <button type="submit" class="checkout-actions__primary">Envoyer et continuer</button>
+                        <button type="submit" class="checkout-actions__primary">Valider et payer</button>
                     </div>
                 </form>
                 <section class="checkout-success" data-checkout-success hidden>
@@ -588,8 +588,7 @@
                     <span class="payment-method__brand">
                         ${paymentLogoMarkup(method)}
                     </span>
-                    <strong>${escapeHtml(method.label)}</strong>
-                    <small>${escapeHtml(method.description)}</small>
+                    <strong class="payment-method__title">${escapeHtml(method.label)}</strong>
                     ${isPaymentMethodReady(method) ? "" : `<em>Méthode de paiement à configurer dans assets/js/checkout-config.js</em>`}
                 </span>
             </label>
