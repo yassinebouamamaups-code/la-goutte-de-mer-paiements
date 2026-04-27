@@ -391,7 +391,6 @@
                     <span>Total</span>
                     <strong data-cart-total>0,00 EUR</strong>
                 </div>
-                <p class="cart-panel__note">Choisissez Stripe ou PayPal au checkout. Le récap client, la facture client et la facture vendeur peuvent être envoyés automatiquement si EmailJS est configuré.</p>
                 <div class="cart-panel__actions cart-panel__actions--double">
                     <button type="button" data-cart-clear>Vider</button>
                     <button type="button" data-cart-checkout class="cart-panel__primary">Valider le panier</button>
