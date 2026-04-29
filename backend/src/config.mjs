@@ -24,6 +24,7 @@ export const config = {
   appBaseUrl: requiredUrl(process.env.APP_BASE_URL || "http://localhost:3001"),
   siteBaseUrl: requiredUrl(process.env.SITE_BASE_URL || "http://127.0.0.1:5500"),
   catalogSourceUrl: process.env.CATALOG_SOURCE_URL || "",
+  catalogWriteFile: resolveOptionalPath(process.env.CATALOG_WRITE_FILE || ""),
   invoicePrefix: process.env.INVOICE_PREFIX || "FAC",
   paypal: {
     environment: (process.env.PAYPAL_ENV || "sandbox").toLowerCase(),
@@ -79,6 +80,14 @@ function ensureDir(target) {
 
 function requiredUrl(value) {
   return String(value || "").replace(/\/+$/, "");
+}
+
+function resolveOptionalPath(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "";
+  return path.isAbsolute(normalized)
+    ? normalized
+    : path.resolve(backendRoot, normalized);
 }
 
 function loadDotEnv(filePath) {

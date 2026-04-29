@@ -114,6 +114,33 @@
         return normalizeStatus(product.statut) === "indisponible";
     }
 
+    async function fetchAvailabilityOverrides() {
+        if (!shopConfig.backend.baseUrl) {
+            return [];
+        }
+
+        try {
+            const response = await fetch(`${shopConfig.backend.baseUrl}/api/catalog/availability`);
+            if (!response.ok) return [];
+            const payload = await response.json().catch(() => ({}));
+            return Array.isArray(payload.unavailableIds) ? payload.unavailableIds.map((id) => clean(id)) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function applyAvailabilityOverrides(products, unavailableIds) {
+        if (!Array.isArray(unavailableIds) || !unavailableIds.length) {
+            return products;
+        }
+
+        const soldIds = new Set(unavailableIds.map((id) => clean(id)).filter(Boolean));
+        return products.map((product) => soldIds.has(clean(product.id))
+            ? { ...product, statut: "indisponible" }
+            : product
+        );
+    }
+
     function escapeHtml(value) {
         const div = document.createElement("div");
         div.textContent = clean(value);
@@ -1520,13 +1547,16 @@
     enableImageFallbacks();
     handlePaymentReturn();
 
-    fetch(cacheSafeSourceUrl)
-        .then((response) => {
-            if (!response.ok) throw new Error("Source produits indisponible");
-            return response.text();
-        })
-        .then((text) => {
-            const products = parseCsv(text);
+    Promise.all([
+        fetch(cacheSafeSourceUrl)
+            .then((response) => {
+                if (!response.ok) throw new Error("Source produits indisponible");
+                return response.text();
+            }),
+        fetchAvailabilityOverrides()
+    ])
+        .then(([text, unavailableIds]) => {
+            const products = applyAvailabilityOverrides(parseCsv(text), unavailableIds);
             if (!products.length) throw new Error("Aucun produit dans la source");
             renderCatalog(products);
             renderSelection(products);

@@ -1,6 +1,7 @@
 import http from "node:http";
 import { URL } from "node:url";
 import { config } from "./config.mjs";
+import { getUnavailableProductIds } from "./lib/inventory.mjs";
 import { capturePayPalOrder, createPayPalOrder, verifyWebhook } from "./lib/paypal.mjs";
 import { createStripeCheckoutSession, retrieveStripeCheckoutSession, verifyStripeWebhookSignature } from "./lib/stripe.mjs";
 import { attachPayPalOrder, attachStripeSession, buildDraftOrder, getOrder, getOrderByPayPalOrderId, getOrderByStripeSessionId, markOrderPaidFromCapture, markOrderPaidFromStripeSession } from "./lib/order-service.mjs";
@@ -27,6 +28,14 @@ const server = http.createServer(async (request, response) => {
         environment: config.nodeEnv,
         paypalEnvironment: config.paypal.environment,
         stripeEnvironment: config.stripe.environment
+      });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/catalog/availability") {
+      sendJson(response, 200, {
+        ok: true,
+        unavailableIds: getUnavailableProductIds()
       });
       return;
     }

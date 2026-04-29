@@ -3,6 +3,7 @@ import { config } from "../config.mjs";
 import { orderStore } from "./json-store.mjs";
 import { findCatalogItems, loadCatalog } from "./catalog.mjs";
 import { httpError } from "./http.mjs";
+import { isProductUnavailable, markItemsUnavailable } from "./inventory.mjs";
 import { sendOrderEmails } from "./mailer.mjs";
 import { writeInvoice } from "./invoice.mjs";
 
@@ -15,6 +16,10 @@ export async function buildDraftOrder(payload) {
 
   const catalog = await loadCatalog();
   const items = findCatalogItems(catalog, cart);
+  const soldItem = items.find((item) => isProductUnavailable(item.id));
+  if (soldItem) {
+    throw httpError(409, `L'article ${soldItem.name} n'est plus disponible.`);
+  }
   const now = new Date();
   const stamp = now.toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
   const totalAmount = items.reduce((sum, item) => sum + item.unitAmount * item.quantity, 0);
@@ -116,6 +121,7 @@ export async function markOrderPaidFromCapture(paypalOrderId, capturePayload) {
     fileName: invoice.fileName,
     absolutePath: invoice.absolutePath
   };
+  next.inventoryUpdate = markItemsUnavailable(next.items);
   orderStore.save(next);
 
   if (!next.notifications.emailedAt) {
@@ -154,6 +160,7 @@ export async function markOrderPaidFromStripeSession(sessionId, sessionPayload) 
     fileName: invoice.fileName,
     absolutePath: invoice.absolutePath
   };
+  next.inventoryUpdate = markItemsUnavailable(next.items);
   orderStore.save(next);
 
   if (!next.notifications.emailedAt) {
