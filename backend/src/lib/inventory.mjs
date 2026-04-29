@@ -59,13 +59,20 @@ export function markItemsUnavailable(items) {
   return { updated: true, changed };
 }
 
-export function getUnavailableProductIds() {
+export function getUnavailableProductIds(catalog = []) {
+  const reactivatedIds = new Set(
+    (Array.isArray(catalog) ? catalog : [])
+      .filter((product) => product?.reactivate)
+      .map((product) => clean(product?.id))
+      .filter(Boolean)
+  );
   const ids = new Set();
 
   orderStore.list().forEach((order) => {
     if (clean(order?.status).toLowerCase() !== "paid") return;
     (Array.isArray(order.items) ? order.items : []).forEach((item) => {
       const id = clean(item?.id);
+      if (reactivatedIds.has(id)) return;
       if (id) ids.add(id);
     });
   });
@@ -73,10 +80,10 @@ export function getUnavailableProductIds() {
   return Array.from(ids);
 }
 
-export function isProductUnavailable(productId) {
+export function isProductUnavailable(productId, catalog = []) {
   const id = clean(productId);
   if (!id) return false;
-  return getUnavailableProductIds().includes(id);
+  return getUnavailableProductIds(catalog).includes(id);
 }
 
 function parseCsv(text) {

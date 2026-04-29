@@ -8,7 +8,7 @@ Les pages `hommes.html`, `femmes.html` et `accessoires.html` affichent les artic
 2. Garde exactement ces colonnes :
 
 ```csv
-id,categorie,nom,taille,prix,promo,selection_moment,description,photos,statut
+id,categorie,nom,taille,prix,promo,selection_moment,description,photos,statut,reactiver
 ```
 
 3. Valeurs attendues :
@@ -21,6 +21,7 @@ id,categorie,nom,taille,prix,promo,selection_moment,description,photos,statut
 - `description` : description courte de l'article
 - `photos` : une ou plusieurs photos separees par `;` ou `|`
 - `statut` : par exemple `disponible`, `reserve`, `vendu`
+- `reactiver` : mets `oui` pour remettre en vente un article deja vendu et ignorer le blocage backend
 
 Exemple :
 
@@ -36,12 +37,12 @@ Si `taille` est vide, le site n'affiche simplement pas cette information.
 
 Le site reste compatible si la colonne `taille` n'existe pas encore dans le CSV en ligne.
 
-Quand le vendeur sera pret, il pourra ajouter manuellement une colonne `taille` dans son CSV ou dans sa feuille Google Sheets, puis renseigner les valeurs sans autre modification technique.
+Quand le vendeur sera pret, il pourra ajouter manuellement une colonne `taille` ou `reactiver` dans son CSV ou dans sa feuille Google Sheets, puis renseigner les valeurs sans autre modification technique.
 
 ## Option Google Sheets
 
 1. Cree une feuille Google Sheets avec les memes colonnes.
-2. Si la feuille existe deja, ajoute simplement une colonne `taille`.
+2. Si la feuille existe deja, ajoute simplement une colonne `taille` et, si besoin, une colonne `reactiver`.
 3. Va dans `Fichier > Partager > Publier sur le web`.
 4. Choisis le format `CSV`.
 5. Copie l'URL publiee.

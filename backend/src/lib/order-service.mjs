@@ -16,7 +16,7 @@ export async function buildDraftOrder(payload) {
 
   const catalog = await loadCatalog();
   const items = findCatalogItems(catalog, cart);
-  const soldItem = items.find((item) => isProductUnavailable(item.id));
+  const soldItem = items.find((item) => isProductUnavailable(item.id, catalog));
   if (soldItem) {
     throw httpError(409, `L'article ${soldItem.name} n'est plus disponible.`);
   }

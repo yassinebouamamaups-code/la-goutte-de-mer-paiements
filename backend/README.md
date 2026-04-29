@@ -71,6 +71,7 @@ Meme si le catalogue principal reste gere dans un CSV ou un Google Sheet publie 
 - l'endpoint `GET /api/catalog/availability` expose la liste des articles deja vendus
 - le front fusionne cette liste avec le CSV et force ces articles en `indisponible`
 - le backend refuse aussi la creation d'une nouvelle commande si un article a deja ete paye
+- si la colonne `reactiver` vaut `oui` dans le CSV, l'article est retire de cette liste et peut etre remis en vente
 
 Cela permet de continuer a gerer la boutique via CSV tout en empechant qu'un article unique soit achete une seconde fois.
 

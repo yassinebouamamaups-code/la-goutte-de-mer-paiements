@@ -1,6 +1,7 @@
 import http from "node:http";
 import { URL } from "node:url";
 import { config } from "./config.mjs";
+import { loadCatalog } from "./lib/catalog.mjs";
 import { getUnavailableProductIds } from "./lib/inventory.mjs";
 import { capturePayPalOrder, createPayPalOrder, verifyWebhook } from "./lib/paypal.mjs";
 import { createStripeCheckoutSession, retrieveStripeCheckoutSession, verifyStripeWebhookSignature } from "./lib/stripe.mjs";
@@ -33,9 +34,10 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET" && url.pathname === "/api/catalog/availability") {
+      const catalog = await loadCatalog();
       sendJson(response, 200, {
         ok: true,
-        unavailableIds: getUnavailableProductIds()
+        unavailableIds: getUnavailableProductIds(catalog)
       });
       return;
     }

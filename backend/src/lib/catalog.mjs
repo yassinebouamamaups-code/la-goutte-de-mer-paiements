@@ -67,6 +67,7 @@ function normalizeProduct(raw) {
     name: clean(raw.nom),
     category: clean(raw.categorie),
     size: clean(raw.taille),
+    reactivate: isTruthy(raw.reactiver),
     image: clean((raw.photos || "").split(/[|;]/)[0]),
     unitAmount: parsePrice(raw.promo || raw.prix)
   };
@@ -136,4 +137,8 @@ function parsePrice(value) {
 
 function clean(value) {
   return String(value || "").trim();
+}
+
+function isTruthy(value) {
+  return ["oui", "yes", "true", "1", "x"].includes(clean(value).toLowerCase());
 }
