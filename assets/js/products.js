@@ -796,6 +796,10 @@
         checkoutElements.total.textContent = formatPrice(total);
     }
 
+    function getInvalidPricedItems(items) {
+        return items.filter((item) => parsePrice(item.price) <= 0);
+    }
+
     function openCart() {
         document.body.classList.add("cart-is-open");
     }
@@ -834,6 +838,13 @@
         const paymentMethod = getAvailablePaymentMethods().find((method) => method.id === formData.get("paymentMethod"));
         if (!paymentMethod) {
             checkoutElements.feedback.textContent = "Choisissez un mode de paiement.";
+            return;
+        }
+
+        const invalidPricedItems = getInvalidPricedItems(items);
+        if (invalidPricedItems.length) {
+            const firstInvalid = invalidPricedItems[0];
+            checkoutElements.feedback.textContent = `Prix indisponible pour ${firstInvalid.name || "un article"}. Retire cet article du panier puis recharge la page avant de réessayer.`;
             return;
         }
 
@@ -1004,7 +1015,9 @@
 
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload.checkoutUrl || !payload.stripeSessionId) {
-            throw new Error(payload?.error?.message || "Impossible de lancer Stripe.");
+            const details = payload?.error?.details;
+            const stripeMessage = typeof details?.error?.message === "string" ? details.error.message : "";
+            throw new Error(stripeMessage || payload?.error?.message || "Impossible de lancer Stripe.");
         }
 
         return payload;
