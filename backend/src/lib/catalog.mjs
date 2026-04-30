@@ -6,7 +6,7 @@ export async function loadCatalog() {
     throw httpError(500, "CATALOG_SOURCE_URL manquant.");
   }
 
-  const response = await fetch(config.catalogSourceUrl, {
+  const response = await fetch(buildCatalogSourceUrl(config.catalogSourceUrl), {
     headers: { "Cache-Control": "no-cache" }
   });
 
@@ -18,6 +18,16 @@ export async function loadCatalog() {
   return parseCsv(text)
     .map(normalizeProduct)
     .filter((product) => product.id && product.name && product.unitAmount > 0);
+}
+
+function buildCatalogSourceUrl(sourceUrl) {
+  const value = clean(sourceUrl);
+  if (!value.includes("docs.google.com")) {
+    return value;
+  }
+
+  const separator = value.includes("?") ? "&" : "?";
+  return `${value}${separator}_=${Date.now()}`;
 }
 
 export function findCatalogItems(catalog, cartItems) {
