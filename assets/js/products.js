@@ -2,7 +2,7 @@
     const productGrid = document.querySelector("[data-products-grid]");
     const selectionGrid = document.querySelector("[data-selection-grid]");
     const productDetail = document.querySelector("[data-product-detail]");
-    if (!productGrid && !selectionGrid && !productDetail) return;
+    const hasProductUi = Boolean(productGrid || selectionGrid || productDetail);
 
     const CART_STORAGE_KEY = "laGoutteDeMerCart";
     const LAST_ORDER_STORAGE_KEY = "laGoutteDeMerLastOrder";
@@ -1559,6 +1559,10 @@
     setupCheckout();
     enableImageFallbacks();
     handlePaymentReturn();
+
+    if (!hasProductUi) {
+        return;
+    }
 
     Promise.all([
         fetch(cacheSafeSourceUrl)
