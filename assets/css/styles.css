@@ -1872,6 +1872,12 @@ a {
     gap: 6px;
 }
 
+.payment-method__meta small:empty,
+.checkout-stripe__lead:empty,
+.checkout-stripe__note:empty {
+    display: none;
+}
+
 .payment-method__content strong,
 .checkout-summary__item strong,
 .checkout-success__meta strong {
@@ -1924,11 +1930,6 @@ a {
     background:
         radial-gradient(circle at top right, rgba(200, 155, 79, 0.12), transparent 34%),
         linear-gradient(180deg, rgba(5, 16, 27, 0.9), rgba(4, 12, 21, 0.98));
-}
-
-.checkout-stripe__copy {
-    display: grid;
-    gap: 6px;
 }
 
 .checkout-stripe__lead,

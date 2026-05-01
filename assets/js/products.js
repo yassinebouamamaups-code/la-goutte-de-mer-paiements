@@ -55,7 +55,7 @@
                     id: "stripe",
                     enabled: paymentMethods.stripe?.enabled !== false,
                     label: paymentMethods.stripe?.label || "Stripe",
-                    description: paymentMethods.stripe?.description || "Paiement par carte bancaire via Stripe.",
+                    description: paymentMethods.stripe?.description || "",
                     checkoutUrl: clean(paymentMethods.stripe?.checkoutUrl),
                     logo: "assets/images/stripe-badge.svg"
                 },
@@ -63,7 +63,7 @@
                     id: "paypal",
                     enabled: paymentMethods.paypal?.enabled !== false,
                     label: paymentMethods.paypal?.label || "PayPal",
-                    description: paymentMethods.paypal?.description || "Paiement s\u00e9curis\u00e9 via PayPal.",
+                    description: paymentMethods.paypal?.description || "",
                     checkoutUrl: clean(paymentMethods.paypal?.checkoutUrl),
                     logo: "assets/images/paypal-badge.svg"
                 }
@@ -657,15 +657,10 @@
                         <div class="checkout-methods__list" data-payment-methods></div>
                     </div>
                     <section class="checkout-stripe" data-checkout-stripe hidden>
-                        <div class="checkout-stripe__copy">
-                            <p class="checkout-panel__eyebrow">Paiement s&eacute;curis&eacute;</p>
-                            <h3>R&eacute;gler directement sur la boutique</h3>
-                            <p class="checkout-stripe__lead">Les moyens de paiement Stripe s'affichent ici selon l'appareil, le pays et la disponibilit&eacute;.</p>
-                        </div>
                         <div class="checkout-stripe__surface">
                             <div class="checkout-stripe__element" data-stripe-payment-element></div>
                         </div>
-                        <p class="checkout-stripe__note" data-stripe-payment-note>Compl&eacute;tez vos coordonn&eacute;es pour afficher Carte, Link et les autres moyens compatibles.</p>
+                        <p class="checkout-stripe__note" data-stripe-payment-note></p>
                     </section>
                     <div class="checkout-summary">
                         <h3>R&eacute;capitulatif</h3>
@@ -742,7 +737,7 @@
                     </span>
                     <span class="payment-method__meta">
                         <strong class="payment-method__title">${escapeHtml(method.label)}</strong>
-                        <small>${escapeHtml(method.description || "")}</small>
+                        ${method.description ? `<small>${escapeHtml(method.description)}</small>` : ""}
                         ${isPaymentMethodReady(method) ? "" : `<em>M\u00e9thode de paiement \u00e0 configurer dans assets/js/checkout-config.js</em>`}
                     </span>
                 </span>
@@ -789,19 +784,20 @@
         if (!isStripe) {
             setCheckoutSubmitLabel("Valider et payer");
             checkoutElements.submitButton.disabled = false;
+            checkoutElements.stripeNote.textContent = "";
             return;
         }
 
         if (!stripeCheckoutState?.actions) {
-            setCheckoutSubmitLabel("Afficher les moyens Stripe");
+            setCheckoutSubmitLabel("Payer avec Stripe");
             checkoutElements.submitButton.disabled = false;
-            checkoutElements.stripeNote.textContent = "Compl\u00e9tez vos coordonn\u00e9es pour afficher Carte, Link et les autres moyens compatibles.";
+            checkoutElements.stripeNote.textContent = "";
             return;
         }
 
         setCheckoutSubmitLabel("Payer avec Stripe");
         checkoutElements.submitButton.disabled = stripeCheckoutState.canConfirm === false;
-        checkoutElements.stripeNote.textContent = "Choisissez votre moyen de paiement puis confirmez directement ici.";
+        checkoutElements.stripeNote.textContent = "";
     }
 
     function setCheckoutSubmitLabel(label) {
@@ -870,7 +866,7 @@
             checkoutElements.stripeMount.innerHTML = "";
         }
         if (checkoutElements?.stripeNote) {
-            checkoutElements.stripeNote.textContent = "Compl\u00e9tez vos coordonn\u00e9es pour afficher Carte, Link et les autres moyens compatibles.";
+            checkoutElements.stripeNote.textContent = "";
         }
     }
 
@@ -981,7 +977,7 @@
 
         const paymentElement = checkout.createPaymentElement({
             layout: {
-                type: "accordion",
+                type: "tabs",
                 defaultCollapsed: false
             }
         });
@@ -1012,7 +1008,7 @@
             });
         }
 
-        checkoutElements.stripeNote.textContent = "Choisissez votre moyen de paiement puis confirmez directement ici.";
+        checkoutElements.stripeNote.textContent = "";
         syncCheckoutPaymentUi();
     }
 
@@ -1024,7 +1020,7 @@
         const items = loadCart();
         const customer = collectCheckoutCustomer();
         if (!items.length || !hasCompleteCheckoutCustomer(customer)) {
-            checkoutElements.stripeNote.textContent = "Compl\u00e9tez vos coordonn\u00e9es pour afficher Carte, Link et les autres moyens compatibles.";
+            checkoutElements.stripeNote.textContent = "";
             return;
         }
 
