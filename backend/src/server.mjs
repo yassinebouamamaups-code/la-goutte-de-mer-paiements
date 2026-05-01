@@ -33,6 +33,15 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === "GET" && url.pathname === "/api/stripe/config") {
+      sendJson(response, 200, {
+        ok: true,
+        publishableKey: config.stripe.publishableKey || "",
+        enabled: Boolean(config.stripe.publishableKey && config.stripe.secretKey)
+      });
+      return;
+    }
+
     if (request.method === "GET" && url.pathname === "/api/catalog/availability") {
       const catalog = await loadCatalog();
       sendJson(response, 200, {
@@ -70,7 +79,7 @@ const server = http.createServer(async (request, response) => {
         orderNumber: savedOrder.orderNumber,
         invoiceNumber: savedOrder.invoiceNumber,
         stripeSessionId: savedOrder.stripe.sessionId,
-        checkoutUrl: savedOrder.stripe.checkoutUrl,
+        clientSecret: stripeSession.client_secret || "",
         totalAmount: savedOrder.totalAmount
       });
       return;

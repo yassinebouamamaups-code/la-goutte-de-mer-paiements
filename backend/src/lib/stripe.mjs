@@ -9,9 +9,10 @@ export async function createStripeCheckoutSession(order) {
 
   const params = new URLSearchParams();
   params.set("mode", "payment");
-  params.set("success_url", `${config.appBaseUrl}${config.stripe.successPath}?session_id={CHECKOUT_SESSION_ID}&order=${encodeURIComponent(order.orderNumber)}`);
-  params.set("cancel_url", `${config.appBaseUrl}${config.stripe.cancelPath}?order=${encodeURIComponent(order.orderNumber)}`);
+  params.set("ui_mode", "custom");
+  params.set("return_url", `${config.appBaseUrl}${config.stripe.successPath}?session_id={CHECKOUT_SESSION_ID}&order=${encodeURIComponent(order.orderNumber)}`);
   params.set("customer_email", order.customer.email);
+  params.set("customer_creation", "if_required");
   params.set("client_reference_id", order.orderNumber);
   params.set("metadata[order_number]", order.orderNumber);
   params.set("metadata[invoice_number]", order.invoiceNumber);
