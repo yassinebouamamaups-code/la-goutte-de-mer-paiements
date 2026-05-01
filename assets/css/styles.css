@@ -1781,7 +1781,7 @@ a {
 .checkout-methods__list {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
+    gap: 12px;
     margin-top: 16px;
 }
 
@@ -1832,6 +1832,10 @@ a {
     border-color: var(--gold);
     box-shadow: 0 12px 24px rgba(11, 18, 27, 0.08);
     transform: translateY(-1px);
+}
+
+.payment-method--active .payment-method__content {
+    border-bottom-color: rgba(200, 155, 79, 0.1);
 }
 
 .payment-method input:checked + .payment-method__content::after {
@@ -1906,8 +1910,10 @@ a {
 
 .checkout-stripe {
     display: grid;
+    grid-column: 1 / -1;
     gap: 16px;
-    padding: 22px;
+    margin: -2px 0 2px;
+    padding: 18px 18px 20px;
     border: 1px solid rgba(200, 155, 79, 0.2);
     background:
         radial-gradient(circle at top right, rgba(200, 155, 79, 0.12), transparent 34%),
@@ -1916,7 +1922,7 @@ a {
 
 .checkout-stripe__copy {
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .checkout-stripe__lead,
@@ -1924,7 +1930,7 @@ a {
     margin: 0;
     color: var(--muted);
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 18px;
+    font-size: 17px;
     line-height: 1.45;
 }
 

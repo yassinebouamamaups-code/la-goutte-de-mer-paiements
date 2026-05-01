@@ -63,7 +63,7 @@
                     id: "paypal",
                     enabled: paymentMethods.paypal?.enabled !== false,
                     label: paymentMethods.paypal?.label || "PayPal",
-                    description: paymentMethods.paypal?.description || "Paiement sÃ©curisÃ© via PayPal.",
+                    description: paymentMethods.paypal?.description || "Paiement s\u00e9curis\u00e9 via PayPal.",
                     checkoutUrl: clean(paymentMethods.paypal?.checkoutUrl),
                     logo: "assets/images/paypal-badge.svg"
                 }
@@ -682,7 +682,7 @@
                     </div>
                 </form>
                 <section class="checkout-success" data-checkout-success hidden>
-                    <p class="checkout-panel__eyebrow">Commande prÃªte</p>
+                    <p class="checkout-panel__eyebrow">Commande pr&ecirc;te</p>
                     <h3>Emails et facture</h3>
                     <p data-checkout-success-text></p>
                     <div class="checkout-success__meta" data-checkout-success-meta></div>
@@ -773,6 +773,17 @@
 
         const method = getSelectedPaymentMethod();
         const isStripe = method?.id === "stripe";
+        const stripeMethodCard = checkoutElements.paymentMethods.querySelector(".payment-method--stripe");
+
+        checkoutElements.paymentMethods.querySelectorAll(".payment-method").forEach((card) => {
+            const input = card.querySelector("input[name='paymentMethod']");
+            card.classList.toggle("payment-method--active", Boolean(input?.checked));
+        });
+
+        if (stripeMethodCard && checkoutElements.stripeSection.previousElementSibling !== stripeMethodCard) {
+            stripeMethodCard.insertAdjacentElement("afterend", checkoutElements.stripeSection);
+        }
+
         checkoutElements.stripeSection.hidden = !isStripe;
 
         if (!isStripe) {
@@ -1190,7 +1201,7 @@
         const invalidPricedItems = getInvalidPricedItems(items);
         if (invalidPricedItems.length) {
             const firstInvalid = invalidPricedItems[0];
-            checkoutElements.feedback.textContent = `Prix indisponible pour ${firstInvalid.name || "un article"}. Retire cet article du panier puis recharge la page avant de rÃ©essayer.`;
+            checkoutElements.feedback.textContent = `Prix indisponible pour ${firstInvalid.name || "un article"}. Retire cet article du panier puis recharge la page avant de r\u00e9essayer.`;
             return;
         }
 
@@ -1206,13 +1217,13 @@
         };
 
         if (!customer.firstName || !customer.lastName || !customer.email || !customer.phone || !customer.addressLine1 || !customer.postalCode || !customer.city) {
-            checkoutElements.feedback.textContent = "Merci de complÃ©ter toutes les informations client.";
+            checkoutElements.feedback.textContent = "Merci de compl\u00e9ter toutes les informations client.";
             return;
         }
 
         if (paymentMethod.id === "paypal" && shopConfig.backend.baseUrl) {
             const submitButton = checkoutElements.form.querySelector("[type='submit']");
-            checkoutElements.feedback.textContent = "CrÃ©ation de la commande PayPal...";
+            checkoutElements.feedback.textContent = "Cr\u00e9ation de la commande PayPal...";
             submitButton.disabled = true;
 
             try {
@@ -1230,7 +1241,7 @@
                 window.location.href = remoteOrder.approvalUrl;
                 return;
             } catch (error) {
-                checkoutElements.feedback.textContent = error.message || "La crÃ©ation du paiement PayPal a Ã©chouÃ©.";
+                checkoutElements.feedback.textContent = error.message || "La cr\u00e9ation du paiement PayPal a \u00e9chou\u00e9.";
             } finally {
                 submitButton.disabled = false;
             }
@@ -1246,7 +1257,7 @@
             try {
                 if (!stripeCheckoutState || stripeCheckoutState.signature !== signature) {
                     resetStripeCheckoutState();
-                    checkoutElements.feedback.textContent = "PrÃ©paration du paiement Stripe...";
+                    checkoutElements.feedback.textContent = "Pr\u00e9paration du paiement Stripe...";
 
                     const remoteSession = await createStripeBackendSession(items, customer);
                     const pendingSession = {
@@ -1260,7 +1271,7 @@
                     saveLastOrder(pendingSession);
                     savePendingStripeSession(pendingSession);
                     await mountStripePaymentElement(remoteSession, items, customer);
-                    checkoutElements.feedback.textContent = "Le module Stripe est prÃªt. Choisissez votre moyen de paiement puis confirmez.";
+                    checkoutElements.feedback.textContent = "Le module Stripe est pr\u00eat. Choisissez votre moyen de paiement puis confirmez.";
                     return;
                 }
 
@@ -1269,13 +1280,13 @@
                     redirect: "if_required"
                 });
                 if (result?.type === "error" || result?.error?.message) {
-                    throw new Error(result?.error?.message || "La confirmation Stripe a Ã©chouÃ©.");
+                    throw new Error(result?.error?.message || "La confirmation Stripe a \u00e9chou\u00e9.");
                 }
 
                 await waitForStripePaymentCompletion(stripeCheckoutState.stripeSessionId, stripeCheckoutState.orderNumber);
                 return;
             } catch (error) {
-                checkoutElements.feedback.textContent = error.message || "La crÃ©ation du paiement Stripe a Ã©chouÃ©.";
+                checkoutElements.feedback.textContent = error.message || "La cr\u00e9ation du paiement Stripe a \u00e9chou\u00e9.";
             } finally {
                 syncCheckoutPaymentUi();
             }
@@ -1284,7 +1295,7 @@
         }
 
 
-        checkoutElements.feedback.textContent = "PrÃ©paration de la commande et des emails...";
+        checkoutElements.feedback.textContent = "Pr\u00e9paration de la commande et des emails...";
 
         const order = createOrder(items, customer, paymentMethod);
         currentOrder = order;
@@ -1301,10 +1312,10 @@
         checkoutElements.success.hidden = false;
         checkoutElements.feedback.textContent = "";
         checkoutElements.successText.textContent = emailResult.automated
-            ? "Les emails client/vendeur ont Ã©tÃ© envoyÃ©s automatiquement et la facture a Ã©tÃ© gÃ©nÃ©rÃ©e."
+            ? "Les emails client/vendeur ont \u00e9t\u00e9 envoy\u00e9s automatiquement et la facture a \u00e9t\u00e9 g\u00e9n\u00e9r\u00e9e."
             : emailResult.error
-                ? "La facture a Ã©tÃ© gÃ©nÃ©rÃ©e, mais l'envoi automatique des emails a Ã©chouÃ©. VÃ©rifiez la configuration EmailJS."
-                : "La facture a Ã©tÃ© gÃ©nÃ©rÃ©e. Pour l'envoi automatique des emails client/vendeur, renseignez EmailJS dans assets/js/checkout-config.js.";
+                ? "La facture a \u00e9t\u00e9 g\u00e9n\u00e9r\u00e9e, mais l'envoi automatique des emails a \u00e9chou\u00e9. V\u00e9rifiez la configuration EmailJS."
+                : "La facture a \u00e9t\u00e9 g\u00e9n\u00e9r\u00e9e. Pour l'envoi automatique des emails client/vendeur, renseignez EmailJS dans assets/js/checkout-config.js.";
 
         checkoutElements.successMeta.innerHTML = `
             <div><span>Commande</span><strong>${escapeHtml(order.orderNumber)}</strong></div>
@@ -1802,7 +1813,7 @@
         banner.style.opacity = "1";
         banner.style.transition = "opacity 260ms ease, transform 260ms ease";
         banner.innerHTML = `
-            <strong style="display:block;margin-bottom:4px;">${type === "success" ? "Paiement confirmÃ©" : "Paiement annulÃ©"}</strong>
+            <strong style="display:block;margin-bottom:4px;">${type === "success" ? "Paiement confirm\u00e9" : "Paiement annul\u00e9"}</strong>
             <span>${escapeHtml(message)}</span>
         `;
 
@@ -1829,7 +1840,7 @@
         const pendingOrder = provider === "stripe" ? loadPendingStripeSession() : loadPendingPayPalOrder();
 
         if (payment === "cancel") {
-            showCheckoutReturnBanner("error", `Le paiement ${provider === "stripe" ? "Stripe" : "PayPal"} a Ã©tÃ© annulÃ©. Ton panier est restÃ© intact.`);
+            showCheckoutReturnBanner("error", `Le paiement ${provider === "stripe" ? "Stripe" : "PayPal"} a \u00e9t\u00e9 annul\u00e9. Ton panier est rest\u00e9 intact.`);
             cleanupPaymentUrl(url);
             return;
         }
@@ -1845,7 +1856,7 @@
         }
 
         if (pendingOrder?.paypalOrderId && pendingOrder.paypalOrderId !== paypalOrderId) {
-            showCheckoutReturnBanner("error", "Le paiement retournÃ© ne correspond pas Ã  la commande en attente.");
+            showCheckoutReturnBanner("error", "Le paiement retourn\u00e9 ne correspond pas \u00e0 la commande en attente.");
             cleanupPaymentUrl(url);
             return;
         }
@@ -1857,15 +1868,15 @@
             const payload = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                throw new Error(payload?.error?.message || "La capture du paiement a Ã©chouÃ©.");
+                throw new Error(payload?.error?.message || "La capture du paiement a \u00e9chou\u00e9.");
             }
 
             clearPendingPayPalOrder();
             saveCart([]);
             renderCart();
-            showCheckoutReturnBanner("success", `Commande ${payload.orderNumber || orderNumber} confirmÃ©e.`);
+            showCheckoutReturnBanner("success", `Commande ${payload.orderNumber || orderNumber} confirm\u00e9e.`);
         } catch (error) {
-            showCheckoutReturnBanner("error", error.message || "La confirmation du paiement PayPal a Ã©chouÃ©.");
+            showCheckoutReturnBanner("error", error.message || "La confirmation du paiement PayPal a \u00e9chou\u00e9.");
         } finally {
             cleanupPaymentUrl(url);
         }
@@ -1881,7 +1892,7 @@
         }
 
         if (pendingSession?.stripeSessionId && pendingSession.stripeSessionId !== sessionId) {
-            showCheckoutReturnBanner("error", "La session Stripe retournÃ©e ne correspond pas Ã  la commande en attente.");
+            showCheckoutReturnBanner("error", "La session Stripe retourn\u00e9e ne correspond pas \u00e0 la commande en attente.");
             cleanupPaymentUrl(url);
             return;
         }
@@ -1898,7 +1909,7 @@
                 clearPendingStripeSession();
                 saveCart([]);
                 renderCart();
-                showCheckoutReturnBanner("success", `Commande ${payload.orderNumber || orderNumber} confirmÃ©e via Stripe.`);
+                showCheckoutReturnBanner("success", `Commande ${payload.orderNumber || orderNumber} confirm\u00e9e via Stripe.`);
             } else {
                 showCheckoutReturnBanner("success", `La session Stripe ${payload.orderNumber || orderNumber} est revenue avec le statut ${payload.paymentStatus || payload.status}. Le webhook finalisera la commande dÃ¨s confirmation.`);
             }
