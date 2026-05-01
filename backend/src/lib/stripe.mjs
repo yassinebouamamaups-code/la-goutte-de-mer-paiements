@@ -3,6 +3,7 @@ import { config, hasStripeConfig } from "../config.mjs";
 import { httpError } from "./http.mjs";
 
 const STRIPE_API_BASE = "https://api.stripe.com/v1";
+const STRIPE_API_VERSION = "2025-03-31.basil";
 
 export async function createStripeCheckoutSession(order) {
   ensureStripeConfig();
@@ -81,6 +82,7 @@ async function stripeRequest(resourcePath, options) {
     method: options.method,
     headers: {
       Authorization: `Bearer ${config.stripe.secretKey}`,
+      "Stripe-Version": STRIPE_API_VERSION,
       "Content-Type": options.body instanceof URLSearchParams
         ? "application/x-www-form-urlencoded"
         : "application/json",

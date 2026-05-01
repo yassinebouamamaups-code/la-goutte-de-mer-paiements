@@ -23,6 +23,7 @@
     let stripeClientConfig = null;
     let stripeSdkPromise = null;
     let stripeCheckoutState = null;
+    let stripeMountingSignature = "";
 
     function resolveCheckoutConfig(customConfig) {
         const seller = customConfig.seller || {};
@@ -619,7 +620,7 @@
                 <form class="checkout-form" data-checkout-form>
                     <div class="checkout-form__grid">
                         <label>
-                            <span>PrÃ©nom</span>
+                            <span>Pr&eacute;nom</span>
                             <input type="text" name="firstName" required>
                         </label>
                         <label>
@@ -631,7 +632,7 @@
                             <input type="email" name="email" required>
                         </label>
                         <label>
-                            <span>TÃ©lÃ©phone</span>
+                            <span>T&eacute;l&eacute;phone</span>
                             <input type="tel" name="phone" required>
                         </label>
                         <label class="checkout-form__full">
@@ -648,7 +649,7 @@
                         </label>
                         <label class="checkout-form__full">
                             <span>Message vendeur</span>
-                            <textarea name="customerNote" rows="3" placeholder="PrÃ©cision de livraison, demande particuliÃ¨re, crÃ©neau..."></textarea>
+                            <textarea name="customerNote" rows="3" placeholder="Pr&eacute;cision de livraison, demande particuli&egrave;re, cr&eacute;neau..."></textarea>
                         </label>
                     </div>
                     <div class="checkout-methods">
@@ -657,17 +658,17 @@
                     </div>
                     <section class="checkout-stripe" data-checkout-stripe hidden>
                         <div class="checkout-stripe__copy">
-                            <p class="checkout-panel__eyebrow">Paiement sÃ©curisÃ©</p>
-                            <h3>RÃ©gler directement sur la boutique</h3>
-                            <p class="checkout-stripe__lead">Les moyens de paiement Stripe s'affichent ici selon l'appareil, le pays et la disponibilitÃ©.</p>
+                            <p class="checkout-panel__eyebrow">Paiement s&eacute;curis&eacute;</p>
+                            <h3>R&eacute;gler directement sur la boutique</h3>
+                            <p class="checkout-stripe__lead">Les moyens de paiement Stripe s'affichent ici selon l'appareil, le pays et la disponibilit&eacute;.</p>
                         </div>
                         <div class="checkout-stripe__surface">
                             <div class="checkout-stripe__element" data-stripe-payment-element></div>
                         </div>
-                        <p class="checkout-stripe__note" data-stripe-payment-note>ComplÃ©tez d'abord vos informations puis cliquez sur le bouton dorÃ© pour charger les moyens de paiement Stripe.</p>
+                        <p class="checkout-stripe__note" data-stripe-payment-note>Compl&eacute;tez vos coordonn&eacute;es pour afficher Carte, Link et les autres moyens compatibles.</p>
                     </section>
                     <div class="checkout-summary">
-                        <h3>RÃ©capitulatif</h3>
+                        <h3>R&eacute;capitulatif</h3>
                         <div class="checkout-summary__items" data-checkout-items></div>
                         <div class="checkout-summary__total">
                             <span>Total</span>
@@ -739,8 +740,11 @@
                     <span class="payment-method__brand">
                         ${paymentLogoMarkup(method)}
                     </span>
-                    <strong class="payment-method__title">${escapeHtml(method.label)}</strong>
-                    ${isPaymentMethodReady(method) ? "" : `<em>MÃ©thode de paiement Ã  configurer dans assets/js/checkout-config.js</em>`}
+                    <span class="payment-method__meta">
+                        <strong class="payment-method__title">${escapeHtml(method.label)}</strong>
+                        <small>${escapeHtml(method.description || "")}</small>
+                        ${isPaymentMethodReady(method) ? "" : `<em>M\u00e9thode de paiement \u00e0 configurer dans assets/js/checkout-config.js</em>`}
+                    </span>
                 </span>
             </label>
         `).join("");
@@ -749,6 +753,10 @@
     function handleCheckoutFormChange(event) {
         if (event.target instanceof HTMLInputElement && event.target.name === "paymentMethod") {
             syncCheckoutPaymentUi();
+        }
+
+        if (getSelectedPaymentMethodId() === "stripe") {
+            void maybeAutoInitializeStripe();
         }
     }
 
@@ -776,7 +784,7 @@
         if (!stripeCheckoutState?.actions) {
             setCheckoutSubmitLabel("Afficher les moyens Stripe");
             checkoutElements.submitButton.disabled = false;
-            checkoutElements.stripeNote.textContent = "ComplÃ©tez d'abord vos informations puis cliquez sur le bouton dorÃ© pour charger les moyens de paiement Stripe.";
+            checkoutElements.stripeNote.textContent = "Compl\u00e9tez vos coordonn\u00e9es pour afficher Carte, Link et les autres moyens compatibles.";
             return;
         }
 
@@ -789,6 +797,35 @@
         if (checkoutElements?.submitButton) {
             checkoutElements.submitButton.textContent = label;
         }
+    }
+
+    function collectCheckoutCustomer() {
+        if (!checkoutElements?.form) return null;
+
+        const formData = new FormData(checkoutElements.form);
+        return {
+            firstName: clean(formData.get("firstName")),
+            lastName: clean(formData.get("lastName")),
+            email: clean(formData.get("email")),
+            phone: clean(formData.get("phone")),
+            addressLine1: clean(formData.get("addressLine1")),
+            postalCode: clean(formData.get("postalCode")),
+            city: clean(formData.get("city")),
+            customerNote: clean(formData.get("customerNote"))
+        };
+    }
+
+    function hasCompleteCheckoutCustomer(customer) {
+        return Boolean(
+            customer
+            && customer.firstName
+            && customer.lastName
+            && customer.email
+            && customer.phone
+            && customer.addressLine1
+            && customer.postalCode
+            && customer.city
+        );
     }
 
     function checkoutSignature(items, customer) {
@@ -817,11 +854,12 @@
         }
 
         stripeCheckoutState = null;
+        stripeMountingSignature = "";
         if (checkoutElements?.stripeMount) {
             checkoutElements.stripeMount.innerHTML = "";
         }
         if (checkoutElements?.stripeNote) {
-            checkoutElements.stripeNote.textContent = "ComplÃ©tez d'abord vos informations puis cliquez sur le bouton dorÃ© pour charger les moyens de paiement Stripe.";
+            checkoutElements.stripeNote.textContent = "Compl\u00e9tez vos coordonn\u00e9es pour afficher Carte, Link et les autres moyens compatibles.";
         }
     }
 
@@ -833,7 +871,7 @@
         const response = await fetch(`${shopConfig.backend.baseUrl}/api/stripe/config`);
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload.publishableKey) {
-            throw new Error(payload?.error?.message || "ClÃ© publique Stripe introuvable.");
+            throw new Error(payload?.error?.message || "Cl\u00e9 publique Stripe introuvable.");
         }
 
         stripeClientConfig = payload;
@@ -967,6 +1005,50 @@
         syncCheckoutPaymentUi();
     }
 
+    async function maybeAutoInitializeStripe() {
+        if (!checkoutElements || getSelectedPaymentMethodId() !== "stripe") {
+            return;
+        }
+
+        const items = loadCart();
+        const customer = collectCheckoutCustomer();
+        if (!items.length || !hasCompleteCheckoutCustomer(customer)) {
+            checkoutElements.stripeNote.textContent = "Compl\u00e9tez vos coordonn\u00e9es pour afficher Carte, Link et les autres moyens compatibles.";
+            return;
+        }
+
+        const signature = checkoutSignature(items, customer);
+        if (stripeCheckoutState?.signature === signature || stripeMountingSignature === signature) {
+            return;
+        }
+
+        if (stripeCheckoutState?.signature && stripeCheckoutState.signature !== signature) {
+            resetStripeCheckoutState();
+        }
+
+        stripeMountingSignature = signature;
+        checkoutElements.feedback.textContent = "Chargement des moyens de paiement Stripe...";
+
+        try {
+            const remoteSession = await createStripeBackendSession(items, customer);
+            const pendingSession = {
+                orderNumber: remoteSession.orderNumber,
+                invoiceNumber: remoteSession.invoiceNumber,
+                stripeSessionId: remoteSession.stripeSessionId,
+                customer
+            };
+
+            currentOrder = pendingSession;
+            saveLastOrder(pendingSession);
+            savePendingStripeSession(pendingSession);
+            await mountStripePaymentElement(remoteSession, items, customer);
+            checkoutElements.feedback.textContent = "";
+        } catch (error) {
+            stripeMountingSignature = "";
+            checkoutElements.feedback.textContent = error.message || "Impossible de charger Stripe.";
+        }
+    }
+
     async function waitForStripePaymentCompletion(sessionId, orderNumber) {
         for (let index = 0; index < 8; index += 1) {
             const response = await fetch(`${shopConfig.backend.baseUrl}/api/checkout/stripe/session/${encodeURIComponent(sessionId)}`);
@@ -978,14 +1060,14 @@
                 closeCart();
                 closeCheckout();
                 resetStripeCheckoutState();
-                showCheckoutReturnBanner("success", `Commande ${payload.orderNumber || orderNumber} confirmÃ©e via Stripe.`);
+                showCheckoutReturnBanner("success", `Commande ${payload.orderNumber || orderNumber} confirm\u00e9e via Stripe.`);
                 return;
             }
 
             await new Promise((resolve) => window.setTimeout(resolve, 1200));
         }
 
-        checkoutElements.feedback.textContent = "Paiement validÃ©. La confirmation finale Stripe est encore en cours, rechargez la page dans quelques secondes si besoin.";
+        checkoutElements.feedback.textContent = "Paiement valid\u00e9. La confirmation finale Stripe est encore en cours, rechargez la page dans quelques secondes si besoin.";
     }
 
     function getAvailablePaymentMethods() {

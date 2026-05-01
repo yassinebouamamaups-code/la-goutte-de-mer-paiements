@@ -1798,36 +1798,33 @@ a {
 
 .payment-method__content {
     position: relative;
-    min-height: 94px;
+    min-height: 76px;
     display: grid;
-    grid-template-columns: 84px 1fr;
+    grid-template-columns: 120px 1fr;
     align-items: center;
-    gap: 18px;
-    padding: 0 22px 0 0;
+    gap: 16px;
+    padding: 12px 48px 12px 14px;
     overflow: hidden;
-    border: 1px solid rgba(200, 155, 79, 0.18);
-    background: linear-gradient(135deg, rgba(7, 21, 35, 0.98), rgba(10, 30, 48, 0.94));
+    border: 1px solid rgba(200, 155, 79, 0.14);
+    background: rgba(6, 19, 32, 0.72);
     transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
 }
 
 .payment-method__content::before {
-    content: "";
-    align-self: stretch;
-    background: linear-gradient(180deg, rgba(200, 155, 79, 0.9), rgba(135, 95, 29, 0.72));
-    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06);
+    content: none;
 }
 
 .payment-method__content::after {
     content: "";
     position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 12px;
-    height: 12px;
+    top: 50%;
+    right: 18px;
+    width: 10px;
+    height: 10px;
     border-radius: 999px;
     background: rgba(246, 239, 228, 0.16);
     border: 1px solid rgba(200, 155, 79, 0.42);
-    transform: none;
+    transform: translateY(-50%);
     transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
@@ -1847,14 +1844,23 @@ a {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 48px;
     margin: 0;
+    padding: 6px 10px;
+    border: 1px solid rgba(200, 155, 79, 0.12);
+    background: rgba(3, 12, 20, 0.58);
 }
 
 .payment-method__logo {
-    width: 108px;
-    height: 56px;
+    width: 82px;
+    height: 36px;
     object-fit: contain;
     border-radius: 0;
+}
+
+.payment-method__meta {
+    display: grid;
+    gap: 6px;
 }
 
 .payment-method__content strong,
@@ -1870,7 +1876,7 @@ a {
 
 .payment-method__title {
     color: var(--gold-soft) !important;
-    font-size: clamp(18px, 1.65vw, 22px) !important;
+    font-size: clamp(15px, 1.2vw, 17px) !important;
     letter-spacing: 0.04em !important;
     text-transform: uppercase !important;
 }
@@ -1884,7 +1890,7 @@ a {
     margin-top: 8px;
     color: var(--muted);
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 17px;
+    font-size: 15px;
     line-height: 1.4;
 }
 
@@ -2049,26 +2055,25 @@ a {
 
 @media (max-width: 640px) {
     .payment-method__content {
-        grid-template-columns: 68px 1fr;
-        gap: 14px;
-        min-height: 82px;
-        padding-right: 16px;
+        grid-template-columns: 96px 1fr;
+        gap: 12px;
+        min-height: 72px;
+        padding: 10px 40px 10px 12px;
     }
 
     .payment-method__content::after {
-        top: 14px;
         right: 14px;
-        width: 11px;
-        height: 11px;
+        width: 9px;
+        height: 9px;
     }
 
     .payment-method__logo {
-        width: 82px;
-        height: 44px;
+        width: 72px;
+        height: 30px;
     }
 
     .payment-method__title {
-        font-size: 18px !important;
+        font-size: 14px !important;
     }
 }
 
