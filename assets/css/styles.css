@@ -1667,6 +1667,8 @@ a {
     box-shadow: 0 32px 70px rgba(0, 0, 0, 0.5);
     transform: translate(-50%, -50%) scale(0.96);
     opacity: 0;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     pointer-events: none;
     transition: opacity 180ms ease, transform 180ms ease;
 }
@@ -1759,6 +1761,7 @@ a {
 .checkout-form input,
 .checkout-form textarea {
     width: 100%;
+    box-sizing: border-box;
     border: 1px solid rgba(200, 155, 79, 0.28);
     background: rgba(6, 19, 32, 0.92);
     color: var(--text);
@@ -1798,6 +1801,7 @@ a {
 
 .payment-method__content {
     position: relative;
+    min-width: 0;
     min-height: 76px;
     display: grid;
     grid-template-columns: 120px 1fr;
@@ -1864,6 +1868,7 @@ a {
 
 .payment-method__meta {
     display: grid;
+    min-width: 0;
     gap: 6px;
 }
 
@@ -1911,6 +1916,7 @@ a {
 .checkout-stripe {
     display: grid;
     grid-column: 1 / -1;
+    min-width: 0;
     gap: 16px;
     margin: -2px 0 2px;
     padding: 18px 18px 20px;
@@ -1936,6 +1942,7 @@ a {
 
 .checkout-stripe__surface {
     position: relative;
+    min-width: 0;
     padding: 18px;
     border: 1px solid rgba(200, 155, 79, 0.18);
     background: rgba(6, 19, 32, 0.72);
@@ -1952,6 +1959,7 @@ a {
 
 .checkout-stripe__element {
     min-height: 86px;
+    min-width: 0;
 }
 
 .checkout-stripe__element .__PrivateStripeElement,
@@ -2061,10 +2069,11 @@ a {
 
 @media (max-width: 640px) {
     .payment-method__content {
-        grid-template-columns: 96px 1fr;
-        gap: 12px;
+        grid-template-columns: 1fr;
+        gap: 10px;
         min-height: 72px;
         padding: 10px 40px 10px 12px;
+        align-items: start;
     }
 
     .payment-method__content::after {
@@ -2073,13 +2082,36 @@ a {
         height: 9px;
     }
 
+    .payment-method__brand {
+        justify-content: flex-start;
+        min-height: 42px;
+        padding: 8px 10px;
+    }
+
     .payment-method__logo {
-        width: 72px;
-        height: 30px;
+        width: 76px;
+        height: 28px;
     }
 
     .payment-method__title {
         font-size: 14px !important;
+    }
+
+    .payment-method__content em {
+        grid-column: 1;
+    }
+
+    .checkout-stripe {
+        padding: 16px 14px 18px;
+    }
+
+    .checkout-stripe__surface {
+        padding: 14px 12px 14px 16px;
+    }
+
+    .checkout-stripe__lead,
+    .checkout-stripe__note {
+        font-size: 16px;
     }
 }
 
@@ -2282,13 +2314,21 @@ a {
     }
 
     .checkout-panel {
-        width: calc(100% - 20px);
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        width: auto;
         max-height: calc(100vh - 20px);
+        transform: translateY(18px);
     }
 
     .checkout-panel__head,
     .checkout-panel__body {
         padding-inline: 18px;
+    }
+
+    .checkout-panel__body {
+        overflow-x: hidden;
     }
 
     .checkout-form__grid,
@@ -2300,5 +2340,14 @@ a {
     .checkout-actions,
     .checkout-success__actions {
         flex-direction: column;
+    }
+}
+
+@supports (-webkit-touch-callout: none) {
+    @media (max-width: 720px) {
+        .checkout-panel,
+        .checkout-is-open .checkout-panel {
+            transform: none;
+        }
     }
 }
