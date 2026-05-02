@@ -24,6 +24,7 @@
     let stripeSdkPromise = null;
     let stripeCheckoutState = null;
     let stripeMountingSignature = "";
+    let stripeAutofillCheckTimer = 0;
 
     function resolveCheckoutConfig(customConfig) {
         const seller = customConfig.seller || {};
@@ -718,6 +719,8 @@
         panel.querySelector("[data-checkout-cancel]").addEventListener("click", closeCheckout);
         panel.querySelector("[data-close-success]").addEventListener("click", closeCheckout);
         checkoutElements.form.addEventListener("change", handleCheckoutFormChange);
+        checkoutElements.form.addEventListener("input", handleCheckoutFormChange);
+        checkoutElements.form.addEventListener("focusout", handleCheckoutFormChange);
         checkoutElements.form.addEventListener("submit", handleCheckoutSubmit);
 
     }
@@ -751,7 +754,7 @@
         }
 
         if (getSelectedPaymentMethodId() === "stripe") {
-            void maybeAutoInitializeStripe();
+            scheduleStripeAutofillCheck();
         }
     }
 
@@ -854,6 +857,8 @@
     }
 
     function resetStripeCheckoutState() {
+        window.clearTimeout(stripeAutofillCheckTimer);
+        stripeAutofillCheckTimer = 0;
         if (stripeCheckoutState?.paymentElement?.destroy) {
             stripeCheckoutState.paymentElement.destroy();
         } else if (stripeCheckoutState?.paymentElement?.unmount) {
@@ -962,6 +967,45 @@
         };
     }
 
+    function stripePaymentElementLayout() {
+        if (window.matchMedia?.("(max-width: 720px)").matches) {
+            return {
+                type: "accordion",
+                defaultCollapsed: false,
+                radios: true
+            };
+        }
+
+        return {
+            type: "tabs",
+            defaultCollapsed: false
+        };
+    }
+
+    function scheduleStripeAutofillCheck(delay = 60) {
+        if (getSelectedPaymentMethodId() !== "stripe") {
+            window.clearTimeout(stripeAutofillCheckTimer);
+            stripeAutofillCheckTimer = 0;
+            return;
+        }
+
+        window.clearTimeout(stripeAutofillCheckTimer);
+        stripeAutofillCheckTimer = window.setTimeout(() => {
+            stripeAutofillCheckTimer = 0;
+            void maybeAutoInitializeStripe();
+        }, delay);
+    }
+
+    function queueStripeAutofillRefresh() {
+        [80, 220, 450, 900].forEach((delay) => {
+            window.setTimeout(() => {
+                if (document.body.classList.contains("checkout-is-open") && getSelectedPaymentMethodId() === "stripe") {
+                    scheduleStripeAutofillCheck();
+                }
+            }, delay);
+        });
+    }
+
     async function mountStripePaymentElement(remoteSession, items, customer) {
         const stripeLoader = await loadStripeSdk();
         const stripeConfig = await ensureStripeClientConfig();
@@ -976,10 +1020,7 @@
         checkoutElements.stripeMount.innerHTML = "";
 
         const paymentElement = checkout.createPaymentElement({
-            layout: {
-                type: "tabs",
-                defaultCollapsed: false
-            }
+            layout: stripePaymentElementLayout()
         });
 
         paymentElement.mount(checkoutElements.stripeMount);
@@ -1173,6 +1214,7 @@
         renderCheckoutSummary(items);
         syncCheckoutPaymentUi();
         document.body.classList.add("checkout-is-open");
+        queueStripeAutofillRefresh();
     }
 
     function closeCheckout() {
