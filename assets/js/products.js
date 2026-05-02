@@ -1009,7 +1009,13 @@
     async function mountStripePaymentElement(remoteSession, items, customer) {
         const stripeLoader = await loadStripeSdk();
         const stripeConfig = await ensureStripeClientConfig();
-        const stripe = stripeLoader(stripeConfig.publishableKey);
+        const stripe = stripeLoader(stripeConfig.publishableKey, {
+            developerTools: {
+                assistant: {
+                    enabled: false
+                }
+            }
+        });
         const checkout = await stripe.initCheckout({
             clientSecret: remoteSession.clientSecret,
             elementsOptions: {
