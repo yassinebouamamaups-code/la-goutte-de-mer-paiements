@@ -2315,12 +2315,8 @@ a {
     }
 
     .checkout-panel {
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        width: auto;
+        width: calc(100% - 20px);
         max-height: calc(100vh - 20px);
-        transform: translateY(18px);
     }
 
     .checkout-panel__head,
@@ -2349,6 +2345,13 @@ a {
         .checkout-panel,
         .checkout-is-open .checkout-panel {
             transform: none;
+        }
+
+        .checkout-panel {
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            width: auto;
         }
     }
 }
